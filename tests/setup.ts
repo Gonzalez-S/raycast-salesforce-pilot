@@ -9,5 +9,6 @@ vi.mock("@raycast/api", () => ({
   showToast: vi.fn(),
   showHUD: vi.fn(),
   open: vi.fn(),
-  Toast: { Style: { Failure: "failure", Success: "success" } },
+  Color: { Red: "red", Yellow: "yellow" },
+  Toast: { Style: { Animated: "animated", Failure: "failure", Success: "success" } },
 }));

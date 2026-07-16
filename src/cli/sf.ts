@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import { SF_MAX_BUFFER } from "./constants";
+import { SF_MAX_BUFFER } from "../org/constants";
 
 type Parsable<T> = { parse: (data: unknown) => T };
 

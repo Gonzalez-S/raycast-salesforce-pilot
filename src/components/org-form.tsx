@@ -1,12 +1,21 @@
 import { Action, ActionPanel, Form, Icon, useNavigation } from "@raycast/api";
-import { FormValidation, useForm } from "@raycast/utils";
+import { useForm } from "@raycast/utils";
 import { useState } from "react";
 import type * as z from "zod/mini";
 
-import { COLORS, DEFAULT_COLOR, DEFAULT_SECTION } from "../shared/constants";
-import * as orgs from "../shared/orgs";
-import { addOrgFormValuesSchema, type Org, type OrgDisplaySettings, orgDisplaySettingsSchema } from "../shared/schemas";
-import * as utils from "../shared/utils";
+import * as utils from "../lib/utils";
+import { COLORS, DEFAULT_COLOR, DEFAULT_SECTION } from "../org/constants";
+import * as orgs from "../org/service";
+import { title as orgTitle } from "../org/presentation";
+import {
+  addOrgFormValuesSchema,
+  colorValueSchema,
+  loginHostSchema,
+  type Org,
+  type OrgDisplaySettings,
+  orgDisplaySettingsSchema,
+  requiredStringSchema,
+} from "../org/schemas";
 
 const colorItems = COLORS.map((color) => (
   <Form.Dropdown.Item
@@ -30,10 +39,10 @@ export const AddOrgForm = ({ onDone }: { onDone: () => void }) => {
       section: DEFAULT_SECTION,
     },
     validation: {
-      loginHost: FormValidation.Required,
-      alias: FormValidation.Required,
-      color: FormValidation.Required,
-      section: FormValidation.Required,
+      loginHost: utils.zodField(loginHostSchema),
+      alias: utils.zodField(requiredStringSchema),
+      color: utils.zodField(colorValueSchema),
+      section: utils.zodField(requiredStringSchema),
     },
     onSubmit: async (values) => {
       const parsed = addOrgFormValuesSchema.parse(values);
@@ -53,9 +62,9 @@ export const AddOrgForm = ({ onDone }: { onDone: () => void }) => {
           successTitle: "Org authenticated",
           successMessage: parsed.alias,
           failureTitle: "Authentication failed",
+          finally: () => setIsLoading(false),
         },
       );
-      setIsLoading(false);
     },
   });
 
@@ -96,28 +105,27 @@ export const EditOrgForm = ({ org, onSave }: { org: Org; onSave: (settings: OrgD
       section: org.section,
     },
     validation: {
-      color: FormValidation.Required,
-      section: FormValidation.Required,
+      color: utils.zodField(colorValueSchema),
+      section: utils.zodField(requiredStringSchema),
     },
     onSubmit: async (values) => {
-      const settings = orgDisplaySettingsSchema.parse(values);
+      const displaySettings = orgDisplaySettingsSchema.parse(values);
       setIsLoading(true);
       await utils.withAnimatedToast(
         "Saving…",
         async () => {
-          await onSave(settings);
+          await onSave(displaySettings);
           pop();
         },
-        { successTitle: "Saved", failureTitle: "Failed to save" },
+        { successTitle: "Saved", failureTitle: "Failed to save", finally: () => setIsLoading(false) },
       );
-      setIsLoading(false);
     },
   });
 
   return (
     <Form
       isLoading={isLoading}
-      navigationTitle={`Edit ${orgs.title(org)}`}
+      navigationTitle={`Edit ${orgTitle(org)}`}
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Save" icon={Icon.Check} onSubmit={handleSubmit} />

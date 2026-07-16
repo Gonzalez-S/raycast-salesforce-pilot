@@ -15,6 +15,9 @@ const loginHosts = Object.keys(LOGIN_URLS) as [keyof typeof LOGIN_URLS, ...(keyo
 export const loginHostSchema = z.enum(loginHosts);
 export type LoginHost = z.infer<typeof loginHostSchema>;
 
+/** Non-empty string for form fields; shared by schemas and useForm validators. */
+export const requiredStringSchema = z.string().check(z.minLength(1, { error: "Required" }));
+
 const normalizeDisplaySettings = <T extends { label?: string; color: ColorValue; section: string }>(values: T) => ({
   ...values,
   label: values.label?.trim() || undefined,
@@ -25,7 +28,7 @@ export const orgDisplaySettingsSchema = z.pipe(
   z.object({
     label: z.optional(z.string()),
     color: colorValueSchema,
-    section: z.string(),
+    section: requiredStringSchema,
   }),
   z.transform(normalizeDisplaySettings),
 );
@@ -35,10 +38,10 @@ export type OrgDisplaySettings = z.infer<typeof orgDisplaySettingsSchema>;
 export const addOrgFormValuesSchema = z.pipe(
   z.object({
     loginHost: loginHostSchema,
-    alias: z.string(),
+    alias: requiredStringSchema,
     label: z.optional(z.string()),
     color: colorValueSchema,
-    section: z.string(),
+    section: requiredStringSchema,
   }),
   z.transform((values) => ({
     ...normalizeDisplaySettings(values),

@@ -5,11 +5,10 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["tests/setup.ts"],
     include: ["tests/**/*.test.ts"],
-    passWithNoTests: true,
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
-      include: ["src/utils.ts"],
+      include: ["src/org/service.ts", "src/org/presentation.ts", "src/org/schemas.ts", "src/lib/utils.ts"],
     },
   },
 });

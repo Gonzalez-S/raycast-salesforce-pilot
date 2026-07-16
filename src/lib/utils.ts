@@ -1,4 +1,5 @@
 import { Form, showToast, Toast } from "@raycast/api";
+import type * as z from "zod/mini";
 
 /** Adapt literal-typed useForm fields to Form.Dropdown's string onChange. */
 export const dropdownProps = <T extends string>(
@@ -9,12 +10,14 @@ type AnimatedToastOptions = {
   successTitle?: string;
   successMessage?: string;
   failureTitle?: string;
+  finally?: () => void;
 };
 
+/** Run async work under an animated toast. Failures are shown in the toast and not rethrown. */
 export const withAnimatedToast = async (
   title: string,
   work: () => Promise<void>,
-  { successTitle = "Done", successMessage, failureTitle = "Failed" }: AnimatedToastOptions = {},
+  { successTitle = "Done", successMessage, failureTitle = "Failed", finally: onFinally }: AnimatedToastOptions = {},
 ) => {
   const toast = await showToast({ style: Toast.Style.Animated, title });
   try {
@@ -26,5 +29,20 @@ export const withAnimatedToast = async (
     toast.style = Toast.Style.Failure;
     toast.title = failureTitle;
     toast.message = error instanceof Error ? error.message : String(error);
+  } finally {
+    onFinally?.();
   }
 };
+
+type SafeParseable = {
+  safeParse: (data: unknown) => { success: true } | { success: false; error: z.core.$ZodError };
+};
+
+/** useForm field validator backed by a Zod schema (single contract with submit parsing). */
+export const zodField =
+  (schema: SafeParseable) =>
+  (value: unknown): string | undefined => {
+    const result = schema.safeParse(value);
+    if (result.success) return undefined;
+    return result.error.issues[0]?.message ?? "Invalid input";
+  };

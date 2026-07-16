@@ -1,13 +1,16 @@
-import { Action, ActionPanel, Icon, Keyboard, List } from "@raycast/api";
+import { Action, ActionPanel, Alert, confirmAlert, Icon, Keyboard, List } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
 
 import { AddOrgForm, EditOrgForm } from "./components/org-form";
-import { HOME_PATH, SETUP_PATH } from "./shared/constants";
-import * as orgs from "./shared/orgs";
+import * as utils from "./lib/utils";
+import { HOME_PATH, SETUP_PATH } from "./org/constants";
+import * as orgs from "./org/service";
+import * as presentation from "./org/presentation";
+import type { Org, OrgDisplaySettings } from "./org/schemas";
 
 export default function OrgsList() {
-  const { data: orgList = [], isLoading, revalidate, mutate } = useCachedPromise(orgs.list);
-  const sections = orgs.groupBySection(orgList);
+  const { data: orgList = [], isLoading, revalidate } = useCachedPromise(orgs.list);
+  const sections = presentation.groupBySection(orgList);
 
   const addOrgAction = (
     <Action.Push
@@ -17,6 +20,29 @@ export default function OrgsList() {
       target={<AddOrgForm onDone={revalidate} />}
     />
   );
+
+  const onEdit = (org: Org) => async (displaySettings: OrgDisplaySettings) => {
+    await orgs.saveSettings(org.username, displaySettings);
+    revalidate();
+  };
+
+  const openOrg = (org: Org, path: string) => () =>
+    utils.withAnimatedToast(`Opening ${presentation.title(org)}…`, () => orgs.open(org, path));
+
+  const deleteOrg = (org: Org) => async () => {
+    const confirmed = await confirmAlert({
+      title: `Delete ${presentation.title(org)}?`,
+      message: "Removes the org from the SF CLI keystore. You can re-authenticate later.",
+      icon: Icon.Trash,
+      primaryAction: { title: "Delete", style: Alert.ActionStyle.Destructive },
+    });
+    if (!confirmed) return;
+
+    await utils.withAnimatedToast("Deleting…", async () => {
+      await orgs.logout(org);
+      revalidate();
+    });
+  };
 
   return (
     <List isLoading={isLoading} isShowingDetail={orgList.length > 0} filtering={{ keepSectionOrder: true }}>
@@ -32,10 +58,10 @@ export default function OrgsList() {
           {sectionOrgs.map((org) => (
             <List.Item
               key={org.username}
-              title={orgs.title(org)}
+              title={presentation.title(org)}
               icon={{ source: Icon.CircleFilled, tintColor: org.color }}
               keywords={[org.alias, org.username, org.instanceUrl, org.section]}
-              accessories={orgs.accessories(org)}
+              accessories={presentation.accessories(org)}
               detail={
                 <List.Item.Detail
                   metadata={
@@ -54,10 +80,10 @@ export default function OrgsList() {
               }
               actions={
                 <ActionPanel>
-                  <Action title="Open Home" icon={Icon.House} onAction={() => orgs.open(org, HOME_PATH)} />
+                  <Action title="Open Home" icon={Icon.House} onAction={openOrg(org, HOME_PATH)} />
                   <Action
                     title="Open Setup"
-                    onAction={() => orgs.open(org, SETUP_PATH)}
+                    onAction={openOrg(org, SETUP_PATH)}
                     icon={Icon.WrenchScrewdriver}
                     shortcut={Keyboard.Shortcut.Common.Save}
                   />
@@ -65,17 +91,7 @@ export default function OrgsList() {
                     title="Edit"
                     icon={Icon.Pencil}
                     shortcut={Keyboard.Shortcut.Common.Edit}
-                    target={
-                      <EditOrgForm
-                        org={org}
-                        onSave={async (settings) => {
-                          await mutate(orgs.saveSettings(org.username, settings), {
-                            optimisticUpdate: (data) => orgs.applySettings(data ?? [], org.username, settings),
-                            shouldRevalidateAfter: false,
-                          });
-                        }}
-                      />
-                    }
+                    target={<EditOrgForm org={org} onSave={onEdit(org)} />}
                   />
                   {addOrgAction}
                   <Action
@@ -83,7 +99,7 @@ export default function OrgsList() {
                     icon={Icon.Trash}
                     style={Action.Style.Destructive}
                     shortcut={Keyboard.Shortcut.Common.Remove}
-                    onAction={() => orgs.remove(org, revalidate)}
+                    onAction={deleteOrg(org)}
                   />
                 </ActionPanel>
               }

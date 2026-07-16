@@ -1,14 +1,11 @@
 export const HOME_PATH = "/lightning/page/home";
 export const SETUP_PATH = "/lightning/setup/SetupOneHome/home";
 export const DEFAULT_SECTION = "Other";
-/** LocalStorage key for per-org display settings (label, color, section). */
-export const ORG_SETTINGS_KEY = "salesforce-pilot-org-prefs";
+export const ORG_SETTINGS_KEY = "salesforce-pilot-org-prefs"; // LocalStorage key for per-org display settings (label, color, section).
+export const SF_MAX_BUFFER = 10 * 1024 * 1024; // Node child_process maxBuffer when capturing `sf --json` stdout.
 export const EXPIRATION_WARN_DAYS = 7;
 export const MS_PER_DAY = 86_400_000;
-/** Node child_process maxBuffer when capturing `sf --json` stdout. */
-export const SF_MAX_BUFFER = 10 * 1024 * 1024;
 
-/** Peacock VS Code starter favorites (https://github.com/johnpapa/vscode-peacock). */
 export const COLORS = [
   { name: "Angular Red", value: "#dd0531" },
   { name: "Azure Blue", value: "#007fff" },
