@@ -1,0 +1,67 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "salesforce-pilot",
+  "title": "Salesforce Pilot",
+  "description": "Open, authenticate, and manage Salesforce orgs from your SF CLI keystore.",
+  "icon": "extension_icon.png",
+  "author": "stiven_gonzalez",
+  "platforms": [
+    "macOS",
+    "Windows"
+  ],
+  "categories": [
+    "Developer Tools"
+  ],
+  "keywords": [
+    "salesforce",
+    "sf",
+    "sfdx",
+    "org",
+    "cli",
+    "authenticate",
+    "scratch org"
+  ],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "orgs-list",
+      "title": "Salesforce Orgs",
+      "subtitle": "Salesforce Pilot",
+      "description": "List authenticated orgs, open them in the browser, add new logins, and remove orgs.",
+      "mode": "view"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.104.23",
+    "@raycast/utils": "^2.2.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^2.2.0",
+    "@types/node": "22.19.17",
+    "@types/react": "19.0.10",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.7.0",
+    "prettier": "^3.9.5",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "echo \"\\n\\nIt seems like you are trying to publish the Raycast extension to npm.\\n\\nIf you did intend to publish it to npm, remove the \\`prepublishOnly\\` script and rerun \\`npm publish\\` again.\\nIf you wanted to publish it to the Raycast Store instead, use \\`npm run publish\\` instead.\\n\\n\" && exit 1",
+    "publish": "npx @raycast/api@latest publish"
+  },
+  "overrides": {
+    "esbuild": "0.28.1"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "fsevents@2.3.3": true
+  }
+}
