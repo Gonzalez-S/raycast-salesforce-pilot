@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_SECTION } from "../src/org/constants";
+import { DEFAULT_GROUP, DEFAULT_SANDBOX_COLOR } from "../src/org/constants";
 import { addOrgFormValuesSchema, orgDisplaySettingsSchema } from "../src/org/schemas";
 
 describe("orgDisplaySettingsSchema", () => {
-  it("trims label and falls back section to default", () => {
+  it("trims label and falls back group to default", () => {
     expect(
       orgDisplaySettingsSchema.parse({
         label: "  Acme  ",
-        color: "#007fff",
-        section: "   ",
+        color: DEFAULT_SANDBOX_COLOR,
+        group: "   ",
       }),
     ).toEqual({
       label: "Acme",
-      color: "#007fff",
-      section: DEFAULT_SECTION,
+      color: DEFAULT_SANDBOX_COLOR,
+      group: DEFAULT_GROUP,
     });
   });
 });
@@ -22,21 +22,27 @@ describe("orgDisplaySettingsSchema", () => {
 describe("addOrgFormValuesSchema", () => {
   it("requires alias and login host", () => {
     expect(
-      addOrgFormValuesSchema.safeParse({ loginHost: "sandbox", alias: "", color: "#007fff", section: "Dev" }).success,
+      addOrgFormValuesSchema.safeParse({
+        loginHost: "sandbox",
+        alias: "",
+        color: DEFAULT_SANDBOX_COLOR,
+        group: "US",
+      }).success,
     ).toBe(false);
     expect(
       addOrgFormValuesSchema.parse({
         loginHost: "production",
         alias: "  my-org  ",
         label: "",
-        color: "#007fff",
-        section: "Dev",
+        color: DEFAULT_SANDBOX_COLOR,
+        group: "US",
       }),
     ).toMatchObject({
       loginHost: "production",
       alias: "my-org",
       label: undefined,
-      section: "Dev",
+      color: DEFAULT_SANDBOX_COLOR,
+      group: "US",
     });
   });
 });

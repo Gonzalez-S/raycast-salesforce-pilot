@@ -1,32 +1,56 @@
 import { Action, ActionPanel, Alert, confirmAlert, Icon, Keyboard, List } from "@raycast/api";
-import { useCachedPromise } from "@raycast/utils";
+import { useCachedPromise, useCachedState } from "@raycast/utils";
+import { useEffect, useMemo, useState } from "react";
 
-import { AddOrgForm, EditOrgForm } from "./components/org-form";
+import { AddOrgForm } from "./components/org-form";
+import { OrgListItem } from "./components/org-list-item";
 import * as utils from "./lib/utils";
-import { HOME_PATH, SETUP_PATH } from "./org/constants";
-import * as orgs from "./org/service";
+import { ALL_SCOPE, RECENT_SCOPE, SCOPE_CACHE_KEY } from "./org/constants";
 import * as presentation from "./org/presentation";
 import type { Org, OrgDisplaySettings } from "./org/schemas";
+import * as orgs from "./org/service";
 
 export default function OrgsList() {
-  const { data: orgList = [], isLoading, revalidate } = useCachedPromise(orgs.list);
-  const sections = presentation.groupBySection(orgList);
+  const { data: remoteOrgs, isLoading, revalidate } = useCachedPromise(orgs.list);
+  const [orgList, setOrgList] = useState<Org[]>([]);
+  const [scope, setScope] = useCachedState(SCOPE_CACHE_KEY, ALL_SCOPE);
+
+  // Sync from CLI only when the remote list refreshes (add / delete / manual reload).
+  useEffect(() => {
+    if (remoteOrgs) setOrgList(remoteOrgs);
+  }, [remoteOrgs]);
+
+  const groups = useMemo(() => presentation.scopeOptions(orgList), [orgList]);
+  const knownGroupNames = useMemo(() => groups.map((option) => option.title), [groups]);
+  const activeScope =
+    scope === ALL_SCOPE || scope === RECENT_SCOPE || groups.some((option) => option.id === scope) ? scope : ALL_SCOPE;
+  const sections = useMemo(() => presentation.listSections(orgList, activeScope), [orgList, activeScope]);
+
+  const patchOrg = (username: string, patch: Partial<Org>) => {
+    setOrgList((previous) => previous.map((org) => (org.username === username ? { ...org, ...patch } : org)));
+  };
 
   const addOrgAction = (
     <Action.Push
       title="Add Org"
       icon={Icon.Plus}
       shortcut={Keyboard.Shortcut.Common.New}
-      target={<AddOrgForm onDone={revalidate} />}
+      target={<AddOrgForm knownGroups={knownGroupNames} onDone={revalidate} />}
     />
   );
 
-  const onEdit = (org: Org) => async (displaySettings: OrgDisplaySettings) => {
+  const saveSettings = (org: Org) => async (displaySettings: OrgDisplaySettings) => {
     await orgs.saveSettings(org.username, displaySettings);
-    revalidate();
+    patchOrg(org.username, displaySettings);
   };
 
-  const openOrg = (org: Org, path: string) => () =>
+  const toggleFavorite = (org: Org) => async () => {
+    const favorite = !org.favorite;
+    await orgs.setFavorite(org.username, favorite);
+    patchOrg(org.username, { favorite });
+  };
+
+  const openOrg = (org: Org) => (path: string) =>
     utils.withAnimatedToast(`Opening ${presentation.title(org)}…`, () => orgs.open(org, path));
 
   const deleteOrg = (org: Org) => async () => {
@@ -44,65 +68,48 @@ export default function OrgsList() {
     });
   };
 
+  const emptyTitle = orgList.length === 0 ? "No Salesforce orgs yet" : "No orgs in this scope";
+  const emptyDescription =
+    orgList.length === 0
+      ? "Authenticate an org to get started. Assign groups when you add or edit orgs."
+      : "Switch the dropdown to Recents, All Groups, or another group — or star an org to keep it on top.";
+
   return (
-    <List isLoading={isLoading} isShowingDetail={orgList.length > 0} filtering={{ keepSectionOrder: true }}>
+    <List
+      isLoading={isLoading && orgList.length === 0}
+      isShowingDetail={orgList.length > 0}
+      filtering={{ keepSectionOrder: true }}
+      searchBarPlaceholder="Search orgs by alias, username, or Org ID…"
+      searchBarAccessory={
+        <List.Dropdown tooltip="List scope" value={activeScope} onChange={setScope}>
+          <List.Dropdown.Item title="Recents" value={RECENT_SCOPE} icon={Icon.Clock} />
+          <List.Dropdown.Item title="All Groups" value={ALL_SCOPE} icon={Icon.Globe} />
+          {groups.map((option) => (
+            <List.Dropdown.Item key={option.id} title={option.title} value={option.id} />
+          ))}
+        </List.Dropdown>
+      }
+    >
       <List.EmptyView
         icon={Icon.Globe}
         actions={<ActionPanel>{addOrgAction}</ActionPanel>}
-        title="No Salesforce orgs yet"
-        description="Authenticate an org to get started. Orgs come from the SF CLI keystore."
+        title={emptyTitle}
+        description={emptyDescription}
       />
 
-      {sections.map(({ name, sectionOrgs }) => (
-        <List.Section key={name} title={name} subtitle={sectionOrgs.length.toString()}>
-          {sectionOrgs.map((org) => (
-            <List.Item
+      {sections.map((section) => (
+        <List.Section key={section.id} title={section.title} subtitle={section.orgs.length.toString()}>
+          {section.orgs.map((org) => (
+            <OrgListItem
               key={org.username}
-              title={presentation.title(org)}
-              icon={{ source: Icon.CircleFilled, tintColor: org.color }}
-              keywords={[org.alias, org.username, org.instanceUrl, org.section]}
-              accessories={presentation.accessories(org)}
-              detail={
-                <List.Item.Detail
-                  metadata={
-                    <List.Item.Detail.Metadata>
-                      <List.Item.Detail.Metadata.Label title="Alias" text={org.alias} />
-                      <List.Item.Detail.Metadata.Label title="Username" text={org.username} />
-                      <List.Item.Detail.Metadata.Separator />
-                      <List.Item.Detail.Metadata.Link
-                        title="Instance"
-                        text={org.instanceUrl}
-                        target={org.instanceUrl}
-                      />
-                    </List.Item.Detail.Metadata>
-                  }
-                />
-              }
-              actions={
-                <ActionPanel>
-                  <Action title="Open Home" icon={Icon.House} onAction={openOrg(org, HOME_PATH)} />
-                  <Action
-                    title="Open Setup"
-                    onAction={openOrg(org, SETUP_PATH)}
-                    icon={Icon.WrenchScrewdriver}
-                    shortcut={Keyboard.Shortcut.Common.Save}
-                  />
-                  <Action.Push
-                    title="Edit"
-                    icon={Icon.Pencil}
-                    shortcut={Keyboard.Shortcut.Common.Edit}
-                    target={<EditOrgForm org={org} onSave={onEdit(org)} />}
-                  />
-                  {addOrgAction}
-                  <Action
-                    title="Delete"
-                    icon={Icon.Trash}
-                    style={Action.Style.Destructive}
-                    shortcut={Keyboard.Shortcut.Common.Remove}
-                    onAction={deleteOrg(org)}
-                  />
-                </ActionPanel>
-              }
+              org={org}
+              sectionId={section.id}
+              knownGroups={knownGroupNames}
+              addOrgAction={addOrgAction}
+              onToggleFavorite={toggleFavorite(org)}
+              onSaveSettings={saveSettings(org)}
+              onOpen={openOrg(org)}
+              onDelete={deleteOrg(org)}
             />
           ))}
         </List.Section>

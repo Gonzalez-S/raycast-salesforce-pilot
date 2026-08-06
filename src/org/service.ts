@@ -1,6 +1,14 @@
 import * as sf from "../cli/sf";
 
-import { DEFAULT_COLOR, DEFAULT_SECTION, LOGIN_URLS } from "./constants";
+import {
+  DEFAULT_GROUP,
+  DEFAULT_PRODUCTION_COLOR,
+  DEFAULT_SANDBOX_COLOR,
+  LOGIN_URLS,
+  ORG_KIND_ORDER,
+  type OrgKind,
+} from "./constants";
+import { classifyKind } from "./kind";
 import {
   type LoginHost,
   type Org,
@@ -13,18 +21,34 @@ import {
 } from "./schemas";
 import * as settings from "./settings";
 
-const toOrg = (row: SfOrgRow, stored: StoredOrgSettings = {}): Org =>
+const defaultColorForKind = (kind: OrgKind) =>
+  kind === "sandbox" || kind === "scratch" ? DEFAULT_SANDBOX_COLOR : DEFAULT_PRODUCTION_COLOR;
+
+const toOrg = (row: SfOrgRow, kind: OrgKind, stored: StoredOrgSettings = {}): Org =>
   orgSchema.parse({
     username: row.username,
     alias: row.alias || row.username,
     instanceUrl: row.instanceUrl || "",
+    orgId: row.orgId ?? undefined,
+    orgName: row.name ?? undefined,
+    orgEdition: row.orgEdition ?? undefined,
+    connectedStatus: row.connectedStatus ?? undefined,
     expirationDate: row.expirationDate ?? row.trailExpirationDate ?? undefined,
+    lastUsed: row.lastUsed ?? undefined,
+    isDefaultOrg: row.isDefaultUsername === true,
+    isDefaultDevHub: row.isDefaultDevHubUsername === true,
+    kind,
+    group: stored.group?.trim() || DEFAULT_GROUP,
     label: stored.label,
-    color: stored.color ?? DEFAULT_COLOR,
-    section: stored.section ?? DEFAULT_SECTION,
+    color: stored.color ?? defaultColorForKind(kind),
+    favorite: stored.favorite ?? false,
   });
 
-const byDisplayName = (a: Org, b: Org) => (a.label || a.alias).localeCompare(b.label || b.alias);
+const mergeOrg = (existing: Org | undefined, next: Org): Org => {
+  if (!existing) return next;
+  // Prefer the richer / higher-priority kind when the same username appears in multiple buckets.
+  return ORG_KIND_ORDER[next.kind] < ORG_KIND_ORDER[existing.kind] ? next : existing;
+};
 
 export const authenticate = async (alias: string, loginHost: LoginHost, displaySettings: OrgDisplaySettings) => {
   const result = await sf.exec(
@@ -40,20 +64,24 @@ export const list = async (): Promise<Org[]> => {
     settings.getSettingsMap(),
   ]);
 
-  const rows = [
-    ...(result.devHubs ?? []),
-    ...(result.nonScratchOrgs ?? []),
-    ...(result.sandboxes ?? []),
-    ...(result.scratchOrgs ?? []),
-    ...(result.other ?? []),
-  ];
-
   const byUsername = new Map<string, Org>();
-  for (const row of rows) {
-    byUsername.set(row.username, toOrg(row, settingsMap[row.username]));
-  }
 
-  return [...byUsername.values()].sort(byDisplayName);
+  const ingest = (rows: SfOrgRow[] | undefined, bucket: string) => {
+    for (const row of rows ?? []) {
+      const kind = classifyKind(row, bucket);
+      const next = toOrg(row, kind, settingsMap[row.username]);
+      byUsername.set(row.username, mergeOrg(byUsername.get(row.username), next));
+    }
+  };
+
+  // Low → high priority so Dev Hub / production classifications win over duplicates.
+  ingest(result.other, "other");
+  ingest(result.scratchOrgs, "scratchOrgs");
+  ingest(result.sandboxes, "sandboxes");
+  ingest(result.nonScratchOrgs, "nonScratchOrgs");
+  ingest(result.devHubs, "devHubs");
+
+  return [...byUsername.values()];
 };
 
 export const open = (org: Org, path: string) =>
@@ -65,3 +93,4 @@ export const logout = async (org: Org) => {
 };
 
 export const saveSettings = settings.saveSettings;
+export const setFavorite = settings.setFavorite;

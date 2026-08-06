@@ -13,5 +13,6 @@ Raycast extension for opening and managing Salesforce orgs from your SF CLI keys
 - Lists orgs from the SF CLI keystore (source of truth)
 - Open Home or Setup with auto-login (frontdoor)
 - Authenticate a new org into the CLI
-- Edit local label, color, and section
+- Edit local label, color, and group; pin favorites
+- Filter by Recents, All Groups, or a manual group
 - Delete an org from the CLI keystore (with confirmation)

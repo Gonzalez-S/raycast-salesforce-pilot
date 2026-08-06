@@ -22,9 +22,16 @@ const setSettingsMap = async (settings: OrgSettingsMap) => {
   await LocalStorage.setItem(ORG_SETTINGS_KEY, JSON.stringify(settings));
 };
 
+/** Saves form display fields; preserves favorite if already set. */
 export const saveSettings = async (username: string, settings: OrgDisplaySettings) => {
   const all = await getSettingsMap();
-  all[username] = settings;
+  all[username] = { ...all[username], ...settings };
+  await setSettingsMap(all);
+};
+
+export const setFavorite = async (username: string, favorite: boolean) => {
+  const all = await getSettingsMap();
+  all[username] = { ...all[username], favorite };
   await setSettingsMap(all);
 };
 

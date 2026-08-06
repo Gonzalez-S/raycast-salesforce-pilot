@@ -1,12 +1,18 @@
-import { Action, ActionPanel, Form, Icon, useNavigation } from "@raycast/api";
+import { Action, ActionPanel, Form, Icon, showToast, Toast, useNavigation } from "@raycast/api";
 import { useForm } from "@raycast/utils";
 import { useState } from "react";
 import type * as z from "zod/mini";
 
 import * as utils from "../lib/utils";
-import { COLORS, DEFAULT_COLOR, DEFAULT_SECTION } from "../org/constants";
-import * as orgs from "../org/service";
+import {
+  DEFAULT_GROUP,
+  DEFAULT_PRODUCTION_COLOR,
+  DEFAULT_SANDBOX_COLOR,
+  PRODUCTION_COLORS,
+  SANDBOX_COLORS,
+} from "../org/constants";
 import { title as orgTitle } from "../org/presentation";
+import * as orgs from "../org/service";
 import {
   addOrgFormValuesSchema,
   colorValueSchema,
@@ -17,7 +23,7 @@ import {
   requiredStringSchema,
 } from "../org/schemas";
 
-const colorItems = COLORS.map((color) => (
+const productionColorItems = PRODUCTION_COLORS.map((color) => (
   <Form.Dropdown.Item
     key={color.value}
     value={color.value}
@@ -26,26 +32,60 @@ const colorItems = COLORS.map((color) => (
   />
 ));
 
-export const AddOrgForm = ({ onDone }: { onDone: () => void }) => {
+const sandboxColorItems = SANDBOX_COLORS.map((color) => (
+  <Form.Dropdown.Item
+    key={color.value}
+    value={color.value}
+    title={color.name}
+    icon={{ source: Icon.CircleFilled, tintColor: color.value }}
+  />
+));
+
+const ColorDropdown = (props: Partial<Form.ItemProps<string>> & { id: string }) => (
+  <Form.Dropdown title="Color" {...props}>
+    <Form.Dropdown.Section title="Production / Dev Hub">{productionColorItems}</Form.Dropdown.Section>
+    <Form.Dropdown.Section title="Sandbox & Scratch">{sandboxColorItems}</Form.Dropdown.Section>
+  </Form.Dropdown>
+);
+
+const GroupField = ({
+  groupProps,
+  knownGroups,
+}: {
+  groupProps: Partial<Form.ItemProps<string>> & { id: string };
+  knownGroups: string[];
+}) => (
+  <>
+    <Form.TextField
+      title="Group"
+      placeholder={DEFAULT_GROUP}
+      info="Manual list bucket (e.g. US, UK). Favorites are separate pins and stay on top of every group scope."
+      {...groupProps}
+    />
+    {knownGroups.length > 0 ? <Form.Description text={`Existing groups: ${knownGroups.join(", ")}`} /> : null}
+  </>
+);
+
+export const AddOrgForm = ({ knownGroups, onDone }: { knownGroups: string[]; onDone: () => void }) => {
   const { pop } = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { handleSubmit, itemProps } = useForm<z.input<typeof addOrgFormValuesSchema>>({
+  const { handleSubmit, itemProps, setValue, values } = useForm<z.input<typeof addOrgFormValuesSchema>>({
     initialValues: {
       loginHost: "sandbox",
       alias: "",
       label: "",
-      color: DEFAULT_COLOR,
-      section: DEFAULT_SECTION,
+      color: DEFAULT_SANDBOX_COLOR,
+      group: DEFAULT_GROUP,
     },
     validation: {
       loginHost: utils.zodField(loginHostSchema),
       alias: utils.zodField(requiredStringSchema),
       color: utils.zodField(colorValueSchema),
-      section: utils.zodField(requiredStringSchema),
+      group: utils.zodField(requiredStringSchema),
     },
-    onSubmit: async (values) => {
-      const parsed = addOrgFormValuesSchema.parse(values);
+    onSubmit: async (formValues) => {
+      const parsed = addOrgFormValuesSchema.parse(formValues);
       setIsLoading(true);
       await utils.withAnimatedToast(
         "Waiting for Salesforce login…",
@@ -53,7 +93,7 @@ export const AddOrgForm = ({ onDone }: { onDone: () => void }) => {
           await orgs.authenticate(parsed.alias, parsed.loginHost, {
             label: parsed.label,
             color: parsed.color,
-            section: parsed.section,
+            group: parsed.group,
           });
           onDone();
           pop();
@@ -68,6 +108,8 @@ export const AddOrgForm = ({ onDone }: { onDone: () => void }) => {
     },
   });
 
+  const loginHostProps = utils.dropdownProps(itemProps.loginHost);
+
   return (
     <Form
       isLoading={isLoading}
@@ -78,23 +120,40 @@ export const AddOrgForm = ({ onDone }: { onDone: () => void }) => {
         </ActionPanel>
       }
     >
-      <Form.Description text="Salesforce opens a browser for OAuth. The org is saved to the SF CLI keystore." />
-      <Form.Dropdown title="Login Host" {...utils.dropdownProps(itemProps.loginHost)}>
+      <Form.Description text="Salesforce opens a browser for OAuth. The org is saved to the SF CLI keystore. Assign a group so it shows up in the right list scope." />
+      <Form.Dropdown
+        title="Login Host"
+        {...loginHostProps}
+        onChange={(value) => {
+          loginHostProps.onChange?.(value);
+          const nextDefault = value === "production" ? DEFAULT_PRODUCTION_COLOR : DEFAULT_SANDBOX_COLOR;
+          const inProduction = PRODUCTION_COLORS.some((c) => c.value === values.color);
+          const inSandbox = SANDBOX_COLORS.some((c) => c.value === values.color);
+          if (value === "production" && !inProduction) setValue("color", nextDefault);
+          if (value === "sandbox" && !inSandbox) setValue("color", nextDefault);
+        }}
+      >
         <Form.Dropdown.Item value="production" title="Production / Dev Hub" />
         <Form.Dropdown.Item value="sandbox" title="Sandbox" />
       </Form.Dropdown>
-      <Form.TextField title="Alias" placeholder="my-scratch" {...itemProps.alias} />
+      <Form.TextField title="Alias" placeholder="us-dev1" {...itemProps.alias} />
       <Form.Separator />
       <Form.TextField title="Label" placeholder="Optional display name" {...itemProps.label} />
-      <Form.Dropdown title="Color" {...utils.dropdownProps(itemProps.color)}>
-        {colorItems}
-      </Form.Dropdown>
-      <Form.TextField title="Section" placeholder={DEFAULT_SECTION} {...itemProps.section} />
+      <ColorDropdown {...utils.dropdownProps(itemProps.color)} />
+      <GroupField groupProps={itemProps.group} knownGroups={knownGroups} />
     </Form>
   );
 };
 
-export const EditOrgForm = ({ org, onSave }: { org: Org; onSave: (settings: OrgDisplaySettings) => Promise<void> }) => {
+export const EditOrgForm = ({
+  org,
+  knownGroups,
+  onSave,
+}: {
+  org: Org;
+  knownGroups: string[];
+  onSave: (settings: OrgDisplaySettings) => Promise<void>;
+}) => {
   const { pop } = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -102,23 +161,27 @@ export const EditOrgForm = ({ org, onSave }: { org: Org; onSave: (settings: OrgD
     initialValues: {
       label: org.label ?? "",
       color: org.color,
-      section: org.section,
+      group: org.group,
     },
     validation: {
       color: utils.zodField(colorValueSchema),
-      section: utils.zodField(requiredStringSchema),
+      group: utils.zodField(requiredStringSchema),
     },
-    onSubmit: async (values) => {
-      const displaySettings = orgDisplaySettingsSchema.parse(values);
+    onSubmit: async (formValues) => {
+      const displaySettings = orgDisplaySettingsSchema.parse(formValues);
       setIsLoading(true);
-      await utils.withAnimatedToast(
-        "Saving…",
-        async () => {
-          await onSave(displaySettings);
-          pop();
-        },
-        { successTitle: "Saved", failureTitle: "Failed to save", finally: () => setIsLoading(false) },
-      );
+      try {
+        await onSave(displaySettings);
+        pop();
+      } catch (error) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Failed to save",
+          message: error instanceof Error ? error.message : String(error),
+        });
+      } finally {
+        setIsLoading(false);
+      }
     },
   });
 
@@ -137,10 +200,8 @@ export const EditOrgForm = ({ org, onSave }: { org: Org; onSave: (settings: OrgD
       <Form.Description title="Instance URL" text={org.instanceUrl || "—"} />
       <Form.Separator />
       <Form.TextField title="Label" placeholder="Optional display name" {...itemProps.label} />
-      <Form.Dropdown title="Color" {...utils.dropdownProps(itemProps.color)}>
-        {colorItems}
-      </Form.Dropdown>
-      <Form.TextField title="Section" placeholder={DEFAULT_SECTION} {...itemProps.section} />
+      <ColorDropdown {...utils.dropdownProps(itemProps.color)} />
+      <GroupField groupProps={itemProps.group} knownGroups={knownGroups} />
     </Form>
   );
 };
