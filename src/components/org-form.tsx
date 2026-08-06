@@ -11,8 +11,8 @@ import {
   PRODUCTION_COLORS,
   SANDBOX_COLORS,
 } from "../org/constants";
+import { ORG_KIND_ICON } from "../org/kind";
 import { title as orgTitle } from "../org/presentation";
-import * as orgs from "../org/service";
 import {
   addOrgFormValuesSchema,
   colorValueSchema,
@@ -22,6 +22,7 @@ import {
   orgDisplaySettingsSchema,
   requiredStringSchema,
 } from "../org/schemas";
+import * as orgs from "../org/service";
 
 const productionColorItems = PRODUCTION_COLORS.map((color) => (
   <Form.Dropdown.Item
@@ -59,7 +60,7 @@ const GroupField = ({
     <Form.TextField
       title="Group"
       placeholder={DEFAULT_GROUP}
-      info="Manual list bucket (e.g. US, UK). Favorites are separate pins and stay on top of every group scope."
+      info="Manual list bucket. Pins are separate and stay on top of every group scope."
       {...groupProps}
     />
     {knownGroups.length > 0 ? <Form.Description text={`Existing groups: ${knownGroups.join(", ")}`} /> : null}
@@ -133,10 +134,10 @@ export const AddOrgForm = ({ knownGroups, onDone }: { knownGroups: string[]; onD
           if (value === "sandbox" && !inSandbox) setValue("color", nextDefault);
         }}
       >
-        <Form.Dropdown.Item value="production" title="Production / Dev Hub" />
-        <Form.Dropdown.Item value="sandbox" title="Sandbox" />
+        <Form.Dropdown.Item value="production" title="Production / Dev Hub" icon={ORG_KIND_ICON.production} />
+        <Form.Dropdown.Item value="sandbox" title="Sandbox" icon={ORG_KIND_ICON.sandbox} />
       </Form.Dropdown>
-      <Form.TextField title="Alias" placeholder="us-dev1" {...itemProps.alias} />
+      <Form.TextField title="Alias" placeholder="sandbox-1" {...itemProps.alias} />
       <Form.Separator />
       <Form.TextField title="Label" placeholder="Optional display name" {...itemProps.label} />
       <ColorDropdown {...utils.dropdownProps(itemProps.color)} />

@@ -55,12 +55,12 @@ export const addOrgFormValuesSchema = z.pipe(
 
 export type AddOrgFormValues = z.infer<typeof addOrgFormValuesSchema>;
 
-/** Partial prefs as stored in LocalStorage. */
+/** Partial prefs as stored in LocalStorage. Color is validated when applied to an org. */
 export const storedOrgSettingsSchema = z.object({
   label: z.optional(z.string()),
-  color: z.optional(colorValueSchema),
+  color: z.optional(z.string()),
   group: z.optional(z.string()),
-  favorite: z.optional(z.boolean()),
+  pinned: z.optional(z.boolean()),
 });
 
 export type StoredOrgSettings = z.infer<typeof storedOrgSettingsSchema>;
@@ -68,6 +68,12 @@ export type StoredOrgSettings = z.infer<typeof storedOrgSettingsSchema>;
 export const orgSettingsMapSchema = z.record(z.string(), storedOrgSettingsSchema);
 
 export type OrgSettingsMap = z.infer<typeof orgSettingsMapSchema>;
+
+/** Returns the value when it is in the current palette; otherwise undefined. */
+export const parseColorValue = (value: string | undefined): ColorValue | undefined => {
+  const parsed = colorValueSchema.safeParse(value);
+  return parsed.success ? parsed.data : undefined;
+};
 
 export const sfOrgRowSchema = z.looseObject({
   username: z.string(),
@@ -103,9 +109,22 @@ export const orgAuthResultSchema = z.object({
   username: z.string(),
 });
 
+/** One row from `sf alias list --json` (alias → username/value). */
+export const sfAliasRowSchema = z.object({
+  alias: z.string(),
+  value: z.string(),
+});
+
+export const sfAliasListResultSchema = z.array(sfAliasRowSchema);
+
+export type SfAliasRow = z.infer<typeof sfAliasRowSchema>;
+
 export const orgSchema = z.object({
   username: z.string(),
+  /** Primary alias from `sf org list` (most recently added for that username). */
   alias: z.string(),
+  /** Every CLI alias that points at this username (from `sf alias list`). */
+  aliases: z.array(z.string()),
   instanceUrl: z.string(),
   orgId: z.optional(z.string()),
   orgName: z.optional(z.string()),
@@ -119,7 +138,7 @@ export const orgSchema = z.object({
   group: z.string(),
   label: z.optional(z.string()),
   color: colorValueSchema,
-  favorite: z.boolean(),
+  pinned: z.boolean(),
 });
 
 export type Org = z.infer<typeof orgSchema>;

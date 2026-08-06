@@ -6,6 +6,8 @@ vi.mock("@raycast/api", () => ({
     setItem: vi.fn(),
     removeItem: vi.fn(),
   },
+  getPreferenceValues: vi.fn(() => ({})),
+  openExtensionPreferences: vi.fn(() => Promise.resolve()),
   showToast: vi.fn(),
   showHUD: vi.fn(),
   open: vi.fn(),
@@ -19,6 +21,7 @@ vi.mock("@raycast/api", () => ({
   },
   Icon: {
     Star: "star",
+    Pin: "pin-16",
     Globe: "globe-16",
     Box: "box-16",
     Hammer: "hammer-16",
@@ -29,4 +32,5 @@ vi.mock("@raycast/api", () => ({
     Clock: "clock-16",
   },
   Toast: { Style: { Animated: "animated", Failure: "failure", Success: "success" } },
+  closeMainWindow: vi.fn(() => Promise.resolve()),
 }));

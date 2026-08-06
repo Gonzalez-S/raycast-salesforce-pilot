@@ -1,0 +1,5 @@
+{
+  "packageDirectories": [{ "path": "force-app", "default": true }],
+  "name": "alpha",
+  "sourceApiVersion": "64.0"
+}

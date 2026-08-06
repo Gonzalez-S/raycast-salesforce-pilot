@@ -18,25 +18,31 @@ export const getSettingsMap = async (): Promise<OrgSettingsMap> => {
   return parsed.success ? parsed.data : {};
 };
 
-const setSettingsMap = async (settings: OrgSettingsMap) => {
+export const replaceSettingsMap = async (settings: OrgSettingsMap) => {
   await LocalStorage.setItem(ORG_SETTINGS_KEY, JSON.stringify(settings));
 };
 
-/** Saves form display fields; preserves favorite if already set. */
+/** Saves form display fields; preserves pin if already set. */
 export const saveSettings = async (username: string, settings: OrgDisplaySettings) => {
   const all = await getSettingsMap();
   all[username] = { ...all[username], ...settings };
-  await setSettingsMap(all);
+  await replaceSettingsMap(all);
 };
 
-export const setFavorite = async (username: string, favorite: boolean) => {
+export const setPinned = async (username: string, pinned: boolean) => {
   const all = await getSettingsMap();
-  all[username] = { ...all[username], favorite };
-  await setSettingsMap(all);
+  const previous = all[username] ?? {};
+  all[username] = {
+    label: previous.label,
+    color: previous.color,
+    group: previous.group,
+    pinned,
+  };
+  await replaceSettingsMap(all);
 };
 
 export const clearSettings = async (username: string) => {
   const all = await getSettingsMap();
   delete all[username];
-  await setSettingsMap(all);
+  await replaceSettingsMap(all);
 };

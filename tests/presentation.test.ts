@@ -5,7 +5,7 @@ import {
   DEFAULT_GROUP,
   DEFAULT_PRODUCTION_COLOR,
   DEFAULT_SANDBOX_COLOR,
-  FAVORITES_SECTION,
+  PINS_SECTION,
   RECENT_SCOPE,
 } from "../src/org/constants";
 import { classifyKind } from "../src/org/kind";
@@ -25,10 +25,11 @@ import type { Org } from "../src/org/schemas";
 const org = (overrides: Partial<Org> & Pick<Org, "username" | "alias" | "kind">): Org => ({
   instanceUrl: "https://example.my.salesforce.com",
   color: DEFAULT_SANDBOX_COLOR,
-  favorite: false,
+  pinned: false,
   group: DEFAULT_GROUP,
   isDefaultOrg: false,
   isDefaultDevHub: false,
+  aliases: [overrides.alias],
   ...overrides,
 });
 
@@ -105,7 +106,7 @@ describe("listSections / scopeOptions", () => {
     kind: "production",
     group: "Other",
     label: "Flosum",
-    favorite: true,
+    pinned: true,
     color: DEFAULT_PRODUCTION_COLOR,
   });
 
@@ -113,19 +114,19 @@ describe("listSections / scopeOptions", () => {
     expect(["US", DEFAULT_GROUP, "UK"].sort(compareGroupNames)).toEqual(["UK", "US", DEFAULT_GROUP]);
   });
 
-  it("scopes by manual group while keeping favorites visible", () => {
+  it("scopes by manual group while keeping pins visible", () => {
     const scopes = scopeOptions([usHub, usSand, ukHub, flosum]);
     expect(scopes.map((s) => s.title)).toEqual(["UK", "US", DEFAULT_GROUP]);
 
     const usOnly = listSections([usHub, usSand, ukHub, flosum], "US");
-    expect(usOnly.map((s) => s.title)).toEqual([FAVORITES_SECTION, "US"]);
+    expect(usOnly.map((s) => s.title)).toEqual([PINS_SECTION, "US"]);
     expect(usOnly[0].orgs.map((o) => o.alias)).toEqual(["flosum"]);
     expect(usOnly[1].orgs.map((o) => o.alias)).toEqual(["us-prod", "us-dev1"]);
     expect(usOnly.flatMap((s) => s.orgs).some((o) => o.alias === "uk-prod")).toBe(false);
 
     const all = listSections([usHub, usSand, ukHub, flosum], ALL_SCOPE);
-    // Flosum is favorited (group Other), so Other has no remaining rows.
-    expect(all.map((s) => s.title)).toEqual([FAVORITES_SECTION, "UK", "US"]);
+    // Flosum is pinned (group Other), so Other has no remaining rows.
+    expect(all.map((s) => s.title)).toEqual([PINS_SECTION, "UK", "US"]);
   });
 
   it("builds a flat recent list without group sections", () => {
@@ -165,9 +166,9 @@ describe("daysUntil / accessories", () => {
     expect(soon).toContainEqual({ tag: { value: "4d left", color: "yellow" }, icon: "clock-16" });
   });
 
-  it("uses icon-only type accessories and omits star in Favorites section", () => {
-    const favorite = org({ username: "u", alias: "a", kind: "production", favorite: true, group: "US" });
-    expect(accessories(favorite, { showFavoriteIcon: false, showGroup: true })).toEqual([
+  it("uses icon-only type accessories and omits pin in Pins section", () => {
+    const pinned = org({ username: "u", alias: "a", kind: "production", pinned: true, group: "US" });
+    expect(accessories(pinned, { showPinIcon: false, showGroup: true })).toEqual([
       { icon: "globe-16", tooltip: "Production" },
       { tag: "US", icon: "folder-16", tooltip: "Group" },
     ]);

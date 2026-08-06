@@ -1,4 +1,4 @@
-import { Form, showToast, Toast } from "@raycast/api";
+import { Form, showToast, Toast, closeMainWindow, showHUD } from "@raycast/api";
 import type * as z from "zod/mini";
 
 /** Adapt literal-typed useForm fields to Form.Dropdown's string onChange. */
@@ -31,6 +31,28 @@ export const withAnimatedToast = async (
     toast.message = error instanceof Error ? error.message : String(error);
   } finally {
     onFinally?.();
+  }
+};
+
+/**
+ * Close Raycast immediately, then run work. Success → HUD; failure → toast
+ * (Raycast may reopen for the toast).
+ */
+export const withClosedWindow = async (
+  successHud: string,
+  work: () => Promise<void>,
+  { failureTitle = "Failed" }: { failureTitle?: string } = {},
+) => {
+  await closeMainWindow({ clearRootSearch: true });
+  try {
+    await work();
+    await showHUD(successHud);
+  } catch (error) {
+    await showToast({
+      style: Toast.Style.Failure,
+      title: failureTitle,
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
 };
 

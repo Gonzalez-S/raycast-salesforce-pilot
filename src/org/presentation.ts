@@ -4,10 +4,10 @@ import {
   ALL_SCOPE,
   DEFAULT_GROUP,
   EXPIRATION_WARN_DAYS,
-  FAVORITES_SECTION,
   MS_PER_DAY,
   ORG_KIND_LABEL,
   ORG_KIND_ORDER,
+  PINS_SECTION,
   RECENT_SCOPE,
   type OrgKind,
 } from "./constants";
@@ -26,6 +26,12 @@ export type ScopeOption = {
 };
 
 export const title = (org: Org) => org.label || org.alias;
+
+/** Org name with edition, e.g. "Acme Comp, Enterprise Edition". */
+export const orgNameLabel = (org: Org): string | undefined => {
+  const parts = [org.orgName, org.orgEdition].filter((part): part is string => Boolean(part?.trim()));
+  return parts.length > 0 ? parts.join(", ") : undefined;
+};
 
 export const kindLabel = (kind: OrgKind) => ORG_KIND_LABEL[kind];
 export const kindIcon = (kind: OrgKind) => ORG_KIND_ICON[kind];
@@ -71,21 +77,21 @@ export const scopeOptions = (orgs: Org[]): ScopeOption[] => {
 
 /**
  * Builds list sections for the current dropdown scope.
- * - Recents: flat list by lastUsed (no favorites / group sections)
- * - Otherwise: Favorites first, then manual groups (scoped or all)
+ * - Recents: flat list by lastUsed (no pins / group sections)
+ * - Otherwise: Pins first, then manual groups (scoped or all)
  */
 export const listSections = (orgs: Org[], scope: string): OrgListSection[] => {
   if (scope === RECENT_SCOPE) {
     return [{ id: RECENT_SCOPE, title: "Recent", orgs: [...orgs].sort(compareByLastUsed) }];
   }
 
-  const favorites = orgs.filter((org) => org.favorite).sort(compareOrgs);
-  const rest = orgs.filter((org) => !org.favorite);
+  const pins = orgs.filter((org) => org.pinned).sort(compareOrgs);
+  const rest = orgs.filter((org) => !org.pinned);
   const scoped = scope === ALL_SCOPE ? rest : rest.filter((org) => org.group === scope);
 
   const sections: OrgListSection[] = [];
-  if (favorites.length > 0) {
-    sections.push({ id: FAVORITES_SECTION, title: FAVORITES_SECTION, orgs: favorites });
+  if (pins.length > 0) {
+    sections.push({ id: PINS_SECTION, title: PINS_SECTION, orgs: pins });
   }
 
   const groups = [...groupByManualGroup(scoped).entries()]
@@ -112,12 +118,12 @@ export const daysUntil = (expirationDate?: string): number | null => {
 
 export const accessories = (
   org: Org,
-  options?: { showGroup?: boolean; showFavoriteIcon?: boolean },
+  options?: { showGroup?: boolean; showPinIcon?: boolean },
 ): List.Item.Accessory[] => {
   const items: List.Item.Accessory[] = [];
 
-  if (options?.showFavoriteIcon && org.favorite) {
-    items.push({ icon: Icon.Star, tooltip: "Favorite" });
+  if (options?.showPinIcon && org.pinned) {
+    items.push({ icon: Icon.Pin, tooltip: "Pinned" });
   }
 
   // Icon-only type cue on the row; label lives in the tooltip and detail tags.
@@ -140,18 +146,4 @@ export const accessories = (
   }
 
   return items;
-};
-
-/** Detail pane markdown: list title + optional Salesforce org company name from CLI `name`. */
-export const detailMarkdown = (org: Org): string => {
-  const heading = title(org);
-  const orgName = org.orgName?.trim();
-  const lines = [`# ${heading}`, ""];
-
-  if (orgName && orgName !== heading) {
-    lines.push(`**${orgName}**`, "");
-  }
-
-  lines.push(`Group · ${org.group}`);
-  return lines.join("\n");
 };
