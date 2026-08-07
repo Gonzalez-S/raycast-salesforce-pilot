@@ -42,6 +42,8 @@ export const addOrgFormValuesSchema = z.pipe(
   z.object({
     loginHost: loginHostSchema,
     alias: requiredStringSchema,
+    setDefault: z.optional(z.boolean()),
+    setDefaultDevHub: z.optional(z.boolean()),
     label: z.optional(z.string()),
     color: colorValueSchema,
     group: requiredStringSchema,
@@ -49,11 +51,23 @@ export const addOrgFormValuesSchema = z.pipe(
   z.transform((values) => ({
     ...normalizeDisplaySettings(values),
     loginHost: values.loginHost,
+    instanceUrl: LOGIN_URLS[values.loginHost],
     alias: values.alias.trim(),
+    setDefault: values.setDefault === true,
+    setDefaultDevHub: values.setDefaultDevHub === true,
   })),
 );
 
 export type AddOrgFormValues = z.infer<typeof addOrgFormValuesSchema>;
+
+export const aliasFormValuesSchema = z.pipe(
+  z.object({
+    alias: requiredStringSchema,
+  }),
+  z.transform((values) => ({ alias: values.alias.trim() })),
+);
+
+export type AliasFormValues = z.infer<typeof aliasFormValuesSchema>;
 
 /** Partial prefs as stored in LocalStorage. Color is validated when applied to an org. */
 export const storedOrgSettingsSchema = z.object({
@@ -108,6 +122,25 @@ export type OrgListResult = z.infer<typeof orgListResultSchema>;
 export const orgAuthResultSchema = z.object({
   username: z.string(),
 });
+
+export const configSetResultSchema = z.object({
+  successes: z.array(
+    z.object({
+      name: z.string(),
+      value: z.string(),
+      success: z.boolean(),
+    }),
+  ),
+  failures: z.array(z.looseObject({})),
+});
+
+export const aliasMutationResultSchema = z.array(
+  z.object({
+    alias: z.string(),
+    value: z.optional(z.string()),
+    success: z.boolean(),
+  }),
+);
 
 /** One row from `sf alias list --json` (alias → username/value). */
 export const sfAliasRowSchema = z.object({

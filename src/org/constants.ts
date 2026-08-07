@@ -1,6 +1,3 @@
-export const HOME_PATH = "/lightning/page/home";
-export const SETUP_PATH = "/lightning/setup/SetupOneHome/home";
-
 /** Manual group for orgs that aren't categorized yet. */
 export const DEFAULT_GROUP = "Other";
 /** Dropdown: flat list sorted by CLI lastUsed (newest first). */
@@ -26,17 +23,17 @@ export const PRODUCTION_COLORS = [
   { name: "Azure", value: "#2979FF" },
 ] as const;
 
-/** Distinct pastels for sandboxes, scratches, and misc orgs (one hue each). */
+/** Soft accents for sandboxes, scratches, and misc — spaced around the hue wheel. */
 export const SANDBOX_COLORS = [
-  { name: "Mist", value: "#90CAF9" },
-  { name: "Aqua", value: "#80DEEA" },
-  { name: "Seafoam", value: "#80CBC4" },
-  { name: "Sage", value: "#A5D6A7" },
-  { name: "Butter", value: "#FFE082" },
-  { name: "Peach", value: "#FFCC80" },
-  { name: "Blush", value: "#F8BBD0" },
-  { name: "Lilac", value: "#CE93D8" },
-  { name: "Fog", value: "#B0BEC5" },
+  { name: "Mist", value: "#64B5F6" },
+  { name: "Cyan", value: "#26C6DA" },
+  { name: "Indigo", value: "#9FA8DA" },
+  { name: "Mint", value: "#66BB6A" },
+  { name: "Butter", value: "#FFD54F" },
+  { name: "Peach", value: "#FF8A65" },
+  { name: "Blush", value: "#F06292" },
+  { name: "Lilac", value: "#BA68C8" },
+  { name: "Fog", value: "#90A4AE" },
 ] as const;
 
 export const COLORS = [...PRODUCTION_COLORS, ...SANDBOX_COLORS] as const;

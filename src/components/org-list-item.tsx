@@ -1,15 +1,15 @@
-import { Action, ActionPanel, Clipboard, Icon, Keyboard, List, showToast, Toast } from "@raycast/api";
+import { Action, ActionPanel, Icon, Keyboard, List } from "@raycast/api";
 import type { ReactNode } from "react";
 
 import * as utils from "../lib/utils";
-import { HOME_PATH, PINS_SECTION, RECENT_SCOPE, SETUP_PATH } from "../org/constants";
+import { PINS_SECTION, RECENT_SCOPE } from "../org/constants";
+import { OPEN_PATHS } from "../org/open-paths";
 import * as presentation from "../org/presentation";
 import type { Org, OrgDisplaySettings } from "../org/schemas";
 import * as projectPresentation from "../project/presentation";
 import type { OrgAttachment } from "../project/schemas";
 import { OrgDetail } from "./org-detail";
-import { EditOrgForm } from "./org-form";
-import { OrgProjects } from "./org-projects";
+import { EditOrgForm, SetAliasForm } from "./org-form";
 
 type OrgListItemProps = {
   org: Org;
@@ -21,14 +21,12 @@ type OrgListItemProps = {
   onSaveSettings: (settings: OrgDisplaySettings) => Promise<void>;
   onOpen: (path: string) => void;
   onOpenProject: (attachment: OrgAttachment) => void;
-  onAttachmentsChange: () => void | Promise<void>;
   onRescanProjects: () => Promise<void>;
+  onSetDefaultOrg: () => void;
+  onSetDefaultDevHub: () => void;
+  onUnsetAlias: (alias: string) => void;
+  onRefresh: () => void;
   onDelete: () => void;
-};
-
-const copyToClipboard = async (title: string, content: string) => {
-  await Clipboard.copy(content);
-  await showToast({ style: Toast.Style.Success, title });
 };
 
 export const OrgListItem = ({
@@ -41,22 +39,19 @@ export const OrgListItem = ({
   onSaveSettings,
   onOpen,
   onOpenProject,
-  onAttachmentsChange,
   onRescanProjects,
+  onSetDefaultOrg,
+  onSetDefaultDevHub,
+  onUnsetAlias,
+  onRefresh,
   onDelete,
 }: OrgListItemProps) => {
   const inPins = sectionId === PINS_SECTION;
   const inRecents = sectionId === RECENT_SCOPE;
   const projectAccessory = projectPresentation.attachmentAccessory(attachments);
   const soleProject = attachments.length === 1 ? attachments[0] : undefined;
-
-  const manageProjectsAction = (
-    <Action.Push
-      title="Manage Projects"
-      icon={Icon.List}
-      target={<OrgProjects org={org} onAttachmentsChange={onAttachmentsChange} onRescan={onRescanProjects} />}
-    />
-  );
+  // Every CLI alias except the username itself (username can appear as a pseudo-alias).
+  const unsettableAliases = org.aliases.filter((alias) => alias !== org.username);
 
   return (
     <List.Item
@@ -84,13 +79,11 @@ export const OrgListItem = ({
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            <Action title="Open Home" icon={Icon.House} onAction={() => onOpen(HOME_PATH)} />
-            <Action
-              title="Open Setup"
-              icon={Icon.WrenchScrewdriver}
-              shortcut={Keyboard.Shortcut.Common.Save}
-              onAction={() => onOpen(SETUP_PATH)}
-            />
+            <ActionPanel.Submenu title="Open" icon={Icon.Globe}>
+              {OPEN_PATHS.map((item) => (
+                <Action key={item.path} title={item.name} icon={item.icon} onAction={() => onOpen(item.path)} />
+              ))}
+            </ActionPanel.Submenu>
           </ActionPanel.Section>
           <ActionPanel.Section title="Projects">
             {soleProject ? (
@@ -113,7 +106,6 @@ export const OrgListItem = ({
                 ))}
               </ActionPanel.Submenu>
             ) : null}
-            {manageProjectsAction}
             <Action
               title="Rescan Projects"
               icon={Icon.ArrowClockwise}
@@ -122,6 +114,27 @@ export const OrgListItem = ({
                 utils.withAnimatedToast("Scanning projects…", onRescanProjects, { successTitle: "Scan complete" })
               }
             />
+          </ActionPanel.Section>
+          <ActionPanel.Section title="CLI">
+            {!org.isDefaultOrg ? (
+              <Action title="Set as Default Org" icon={Icon.CheckCircle} onAction={onSetDefaultOrg} />
+            ) : null}
+            {!org.isDefaultDevHub ? (
+              <Action title="Set as Default Dev Hub" icon={Icon.Hammer} onAction={onSetDefaultDevHub} />
+            ) : null}
+            <Action.Push title="Set Alias…" icon={Icon.Text} target={<SetAliasForm org={org} onDone={onRefresh} />} />
+            {unsettableAliases.length > 0 ? (
+              <ActionPanel.Submenu title="Unset Alias" icon={Icon.Trash}>
+                {unsettableAliases.map((alias) => (
+                  <Action
+                    key={alias}
+                    title={alias}
+                    style={Action.Style.Destructive}
+                    onAction={() => onUnsetAlias(alias)}
+                  />
+                ))}
+              </ActionPanel.Submenu>
+            ) : null}
           </ActionPanel.Section>
           <ActionPanel.Section>
             <Action
@@ -136,25 +149,11 @@ export const OrgListItem = ({
               shortcut={Keyboard.Shortcut.Common.Edit}
               target={<EditOrgForm org={org} knownGroups={knownGroups} onSave={onSaveSettings} />}
             />
-            {org.orgId ? (
-              <Action
-                title="Copy Org ID"
-                icon={Icon.Clipboard}
-                shortcut={Keyboard.Shortcut.Common.Copy}
-                onAction={() => copyToClipboard("Copied Org ID", org.orgId!)}
-              />
-            ) : null}
-            <Action
-              title="Copy Username"
-              icon={Icon.Clipboard}
-              shortcut={Keyboard.Shortcut.Common.CopyName}
-              onAction={() => copyToClipboard("Copied Username", org.username)}
-            />
             {addOrgAction}
           </ActionPanel.Section>
           <ActionPanel.Section>
             <Action
-              title="Delete"
+              title={org.kind === "scratch" ? "Delete Scratch Org" : "Delete"}
               icon={Icon.Trash}
               style={Action.Style.Destructive}
               shortcut={Keyboard.Shortcut.Common.Remove}

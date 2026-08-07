@@ -36,7 +36,6 @@ describe("scanProjectsRoot", () => {
 
     expect(alpha).toMatchObject({
       kind: "folder",
-      source: "auto",
       targetOrgs: ["alpha-org"],
     });
     expect(beta).toMatchObject({
@@ -66,24 +65,22 @@ describe("resolveOrgAttachments", () => {
       id: "alpha",
       path: "/tmp/alpha",
       kind: "folder",
-      source: "auto",
       name: "alpha",
       targetOrgs: ["alpha-org"],
     },
     {
-      id: "manual",
-      path: "/tmp/manual",
+      id: "unlinked",
+      path: "/tmp/unlinked",
       kind: "folder",
-      source: "manual",
-      name: "manual",
+      name: "unlinked",
       targetOrgs: [],
     },
   ];
 
   it("auto-links by alias and username case-insensitively", () => {
-    const attachments = resolveOrgAttachments(sampleOrg(), catalog, []);
+    const attachments = resolveOrgAttachments(sampleOrg(), catalog);
     expect(attachments).toHaveLength(1);
-    expect(attachments[0].origin).toBe("auto");
+    expect(attachments[0].entry.name).toBe("alpha");
   });
 
   it("auto-links by secondary alias when primary list alias differs", () => {
@@ -97,22 +94,18 @@ describe("resolveOrgAttachments", () => {
         id: "uat-project",
         path: "/tmp/uat",
         kind: "folder",
-        source: "auto",
         name: "uat",
         targetOrgs: ["us-uat"],
       },
     ];
 
-    const attachments = resolveOrgAttachments(org, catalogWithUat, []);
+    const attachments = resolveOrgAttachments(org, catalogWithUat);
     expect(attachments).toHaveLength(1);
     expect(attachments[0].entry.name).toBe("uat");
   });
 
-  it("merges manual attachments without duplicating auto links", () => {
-    const attachments = resolveOrgAttachments(sampleOrg(), catalog, ["alpha", "manual"]);
-    expect(attachments).toHaveLength(2);
-    expect(attachments.find((attachment) => attachment.entry.id === "alpha")?.origin).toBe("auto");
-    expect(attachments.find((attachment) => attachment.entry.id === "manual")?.origin).toBe("manual");
+  it("ignores catalog entries with no target-org", () => {
+    expect(resolveOrgAttachments(sampleOrg(), catalog).map((a) => a.entry.id)).toEqual(["alpha"]);
   });
 });
 
@@ -124,13 +117,12 @@ describe("resolveAttachmentsForOrgs", () => {
         id: "alpha",
         path: "/tmp/alpha",
         kind: "folder",
-        source: "auto",
         name: "alpha",
         targetOrgs: ["alpha-org"],
       },
     ];
 
-    const result = resolveAttachmentsForOrgs([org], catalog, {});
+    const result = resolveAttachmentsForOrgs([org], catalog);
 
     expect(result).not.toBeInstanceOf(Map);
     expect(result[org.username]).toHaveLength(1);

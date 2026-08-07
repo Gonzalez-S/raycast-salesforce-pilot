@@ -1,18 +1,15 @@
 import type { Org } from "../org/schemas";
 import * as catalog from "./catalog";
-import * as links from "./links";
 import { requireProjectsRoot } from "./preferences";
-import { countMatchedOrgs, resolveAttachmentsForOrgs, resolveOrgAttachments } from "./resolve";
-import { buildManualEntry, scanProjectsRoot } from "./scanner";
-import type { CatalogEntry, OrgAttachment, OrgAttachmentsByUsername } from "./schemas";
+import { countMatchedOrgs, resolveAttachmentsForOrgs } from "./resolve";
+import { scanProjectsRoot } from "./scanner";
+import type { OrgAttachmentsByUsername } from "./schemas";
 
 export type ScanSummary = {
   projectCount: number;
   workspaceCount: number;
   matchedOrgCount: number;
 };
-
-const loadCatalogEntries = async (): Promise<CatalogEntry[]> => catalog.loadCatalogEntries();
 
 export const scanProjects = async (orgs: Org[]): Promise<ScanSummary> => {
   const projectsRoot = requireProjectsRoot();
@@ -44,24 +41,8 @@ export const ensureScannedAndResolve = async (orgs: Org[]): Promise<OrgAttachmen
 };
 
 export const resolveAllAttachments = async (orgs: Org[]): Promise<OrgAttachmentsByUsername> => {
-  const [entries, orgProjectsMap] = await Promise.all([loadCatalogEntries(), links.getOrgProjectsMap()]);
-  return resolveAttachmentsForOrgs(orgs, entries, orgProjectsMap);
-};
-
-export const resolveAttachments = async (org: Org): Promise<OrgAttachment[]> => {
-  const [entries, prefs] = await Promise.all([loadCatalogEntries(), links.getOrgProjectPrefs(org.username)]);
-  return resolveOrgAttachments(org, entries, prefs.manualProjectIds ?? []);
-};
-
-export const addManualProject = async (org: Org, inputPath: string): Promise<OrgAttachment[]> => {
-  const entry = await catalog.upsertManualEntry(await buildManualEntry(inputPath));
-  await links.addManualProject(org.username, entry.id);
-  return resolveAttachments(org);
-};
-
-export const removeManualProject = async (org: Org, projectId: string): Promise<OrgAttachment[]> => {
-  await links.removeManualProject(org.username, projectId);
-  return resolveAttachments(org);
+  const entries = await catalog.loadCatalogEntries();
+  return resolveAttachmentsForOrgs(orgs, entries);
 };
 
 export { openAttachment } from "./open";

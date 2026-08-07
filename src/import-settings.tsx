@@ -32,8 +32,7 @@ export default function Command() {
 
       const confirmed = await confirmAlert({
         title: "Replace local settings?",
-        message:
-          "This overwrites org display prefs, pins, manual project links, and the manual project catalog. The scan catalog is left alone.",
+        message: "This overwrites org display prefs and pins. The project scan catalog is left alone.",
         icon: Icon.Download,
         primaryAction: { title: "Import", style: Alert.ActionStyle.Destructive },
       });
@@ -58,7 +57,7 @@ export default function Command() {
         </ActionPanel>
       }
     >
-      <Form.Description text="Import a Salesforce Pilot settings JSON export. Existing org prefs, pins, and manual project links will be replaced." />
+      <Form.Description text="Import a Salesforce Pilot settings JSON export. Existing org prefs and pins will be replaced." />
       <Form.FilePicker
         title="Settings File"
         allowMultipleSelection={false}

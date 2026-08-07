@@ -129,6 +129,13 @@ export const accessories = (
   // Icon-only type cue on the row; label lives in the tooltip and detail tags.
   items.push({ icon: kindIcon(org.kind), tooltip: kindLabel(org.kind) });
 
+  if (org.isDefaultOrg) {
+    items.push({ icon: Icon.CheckCircle, tooltip: "Default Org" });
+  }
+  if (org.isDefaultDevHub) {
+    items.push({ icon: Icon.Hammer, tooltip: "Default Dev Hub" });
+  }
+
   if (options?.showGroup) {
     items.push({ tag: org.group, icon: Icon.Folder, tooltip: "Group" });
   }

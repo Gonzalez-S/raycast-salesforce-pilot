@@ -2,18 +2,22 @@ import * as z from "zod/mini";
 
 import * as orgSettings from "../org/settings";
 import { orgSettingsMapSchema, parseColorValue, type OrgSettingsMap } from "../org/schemas";
-import * as catalog from "../project/catalog";
-import * as links from "../project/links";
-import { manualCatalogSchema, orgProjectsMapSchema } from "../project/schemas";
 
-export const SETTINGS_EXPORT_VERSION = 1 as const;
+export const SETTINGS_EXPORT_VERSION = 2 as const;
+
+const settingsExportInputSchema = z.object({
+  version: z.union([z.literal(1), z.literal(2)]),
+  exportedAt: z.string(),
+  orgSettings: orgSettingsMapSchema,
+  // Ignored leftovers from v1 exports that included manual project links.
+  orgProjects: z.optional(z.unknown()),
+  manualCatalog: z.optional(z.unknown()),
+});
 
 export const settingsExportSchema = z.object({
   version: z.literal(SETTINGS_EXPORT_VERSION),
   exportedAt: z.string(),
   orgSettings: orgSettingsMapSchema,
-  orgProjects: orgProjectsMapSchema,
-  manualCatalog: manualCatalogSchema,
 });
 
 export type SettingsExport = z.infer<typeof settingsExportSchema>;
@@ -35,18 +39,12 @@ const normalizeOrgSettings = (map: OrgSettingsMap): OrgSettingsMap => {
 
 /** Build a portable JSON snapshot of extension LocalStorage prefs. */
 export const buildSettingsExport = async (): Promise<SettingsExport> => {
-  const [orgSettingsMap, orgProjects, manualCatalog] = await Promise.all([
-    orgSettings.getSettingsMap(),
-    links.getOrgProjectsMap(),
-    catalog.getManualCatalog(),
-  ]);
+  const orgSettingsMap = await orgSettings.getSettingsMap();
 
   return {
     version: SETTINGS_EXPORT_VERSION,
     exportedAt: new Date().toISOString(),
     orgSettings: normalizeOrgSettings(orgSettingsMap),
-    orgProjects,
-    manualCatalog,
   };
 };
 
@@ -58,22 +56,19 @@ export const parseSettingsExport = (raw: string): SettingsExport => {
     throw new Error("File is not valid JSON");
   }
 
-  const parsed = settingsExportSchema.safeParse(data);
+  const parsed = settingsExportInputSchema.safeParse(data);
   if (!parsed.success) {
     throw new Error("JSON is not a Salesforce Pilot settings export");
   }
 
   return {
-    ...parsed.data,
+    version: SETTINGS_EXPORT_VERSION,
+    exportedAt: parsed.data.exportedAt,
     orgSettings: normalizeOrgSettings(parsed.data.orgSettings),
   };
 };
 
 /** Replace LocalStorage prefs from an export (does not touch the scan catalog). */
 export const applySettingsExport = async (payload: SettingsExport): Promise<void> => {
-  await Promise.all([
-    orgSettings.replaceSettingsMap(payload.orgSettings),
-    links.replaceOrgProjectsMap(payload.orgProjects),
-    catalog.replaceManualCatalog(payload.manualCatalog),
-  ]);
+  await orgSettings.replaceSettingsMap(payload.orgSettings);
 };

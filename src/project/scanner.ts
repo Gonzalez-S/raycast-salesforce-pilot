@@ -79,7 +79,7 @@ export const parseWorkspaceFolders = (workspacePath: string, content: string): s
   return resolved;
 };
 
-const buildFolderEntry = async (dirPath: string, source: CatalogEntry["source"]): Promise<CatalogEntry> => {
+const buildFolderEntry = async (dirPath: string): Promise<CatalogEntry> => {
   const normalized = normalizeProjectPath(dirPath);
   const targetOrg = await readTargetOrgFromConfig(normalized);
 
@@ -87,13 +87,12 @@ const buildFolderEntry = async (dirPath: string, source: CatalogEntry["source"])
     id: entryIdForPath(normalized),
     path: normalized,
     kind: "folder",
-    source,
     name: entryName(normalized, "folder"),
     targetOrgs: targetOrg ? [targetOrg] : [],
   };
 };
 
-const buildWorkspaceEntry = async (workspacePath: string, source: CatalogEntry["source"]): Promise<CatalogEntry> => {
+const buildWorkspaceEntry = async (workspacePath: string): Promise<CatalogEntry> => {
   const normalized = normalizeProjectPath(workspacePath);
   const raw = await readFile(normalized, "utf8");
   const workspaceFolders = parseWorkspaceFolders(normalized, raw);
@@ -109,7 +108,6 @@ const buildWorkspaceEntry = async (workspacePath: string, source: CatalogEntry["
     id: entryIdForPath(normalized),
     path: normalized,
     kind: "workspace",
-    source,
     name: entryName(normalized, "workspace"),
     targetOrgs: [...targetOrgs],
     workspaceFolders,
@@ -130,7 +128,7 @@ const walkDirectory = async (dirPath: string, entries: CatalogEntry[]): Promise<
   if (!dirStat.isDirectory()) return;
 
   if (await isDxProjectDir(normalized)) {
-    entries.push(await buildFolderEntry(normalized, "auto"));
+    entries.push(await buildFolderEntry(normalized));
     return;
   }
 
@@ -147,7 +145,7 @@ const walkDirectory = async (dirPath: string, entries: CatalogEntry[]): Promise<
       try {
         const workspaceStat = await stat(workspacePath);
         if (workspaceStat.isFile()) {
-          entries.push(await buildWorkspaceEntry(workspacePath, "auto"));
+          entries.push(await buildWorkspaceEntry(workspacePath));
         }
       } catch {
         // skip unreadable workspace
@@ -193,35 +191,4 @@ export const scanProjectsRoot = async (rootPath: string): Promise<CatalogEntry[]
     byId.set(entry.id, entry);
   }
   return [...byId.values()];
-};
-
-export const buildManualEntry = async (inputPath: string): Promise<CatalogEntry> => {
-  const normalized = normalizeProjectPath(inputPath);
-
-  let fileStat;
-  try {
-    fileStat = await stat(normalized);
-  } catch {
-    throw new Error(`Path not found: ${normalized}`);
-  }
-
-  if (fileStat.isDirectory()) {
-    if (!(await isDxProjectDir(normalized))) {
-      return {
-        id: entryIdForPath(normalized),
-        path: normalized,
-        kind: "folder",
-        source: "manual",
-        name: entryName(normalized, "folder"),
-        targetOrgs: [],
-      };
-    }
-    return { ...(await buildFolderEntry(normalized, "manual")), source: "manual" };
-  }
-
-  if (fileStat.isFile() && normalized.endsWith(WORKSPACE_EXTENSION)) {
-    return { ...(await buildWorkspaceEntry(normalized, "manual")), source: "manual" };
-  }
-
-  throw new Error("Select a folder or .code-workspace file");
 };

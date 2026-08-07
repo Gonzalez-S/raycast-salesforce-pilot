@@ -4,18 +4,18 @@ import {
   DEFAULT_GROUP,
   DEFAULT_PRODUCTION_COLOR,
   DEFAULT_SANDBOX_COLOR,
-  LOGIN_URLS,
   ORG_KIND_ORDER,
   type OrgKind,
 } from "./constants";
 import { classifyKind } from "./kind";
 import {
-  type LoginHost,
   type Org,
   type OrgDisplaySettings,
   type SfAliasRow,
   type SfOrgRow,
   type StoredOrgSettings,
+  aliasMutationResultSchema,
+  configSetResultSchema,
   orgAuthResultSchema,
   orgListResultSchema,
   orgSchema,
@@ -23,7 +23,6 @@ import {
   sfAliasListResultSchema,
 } from "./schemas";
 import * as settings from "./settings";
-import * as projectLinks from "../project/links";
 
 const defaultColorForKind = (kind: OrgKind) =>
   kind === "sandbox" || kind === "scratch" ? DEFAULT_SANDBOX_COLOR : DEFAULT_PRODUCTION_COLOR;
@@ -86,12 +85,31 @@ const mergeOrg = (existing: Org | undefined, next: Org): Org => {
   return { ...preferred, aliases };
 };
 
-export const authenticate = async (alias: string, loginHost: LoginHost, displaySettings: OrgDisplaySettings) => {
-  const result = await sf.exec(
-    ["org", "login", "web", "--alias", alias, "--instance-url", LOGIN_URLS[loginHost]],
-    orgAuthResultSchema,
-  );
+/** Prefer alias for CLI targeting; fall back to username. */
+export const targetFor = (org: Org): string => org.alias || org.username;
+
+export type AuthenticateInput = {
+  alias: string;
+  instanceUrl: string;
+  setDefault?: boolean;
+  setDefaultDevHub?: boolean;
+  displaySettings: OrgDisplaySettings;
+};
+
+export const authenticate = async ({
+  alias,
+  instanceUrl,
+  setDefault,
+  setDefaultDevHub,
+  displaySettings,
+}: AuthenticateInput) => {
+  const args = ["org", "login", "web", "--alias", alias, "--instance-url", instanceUrl];
+  if (setDefault) args.push("--set-default");
+  if (setDefaultDevHub) args.push("--set-default-dev-hub");
+
+  const result = await sf.exec(args, orgAuthResultSchema);
   await settings.saveSettings(result.username, displaySettings);
+  return result;
 };
 
 export const list = async (): Promise<Org[]> => {
@@ -123,12 +141,41 @@ export const list = async (): Promise<Org[]> => {
 };
 
 export const open = (org: Org, path: string) =>
-  sf.exec(["org", "open", "--target-org", org.alias, "--path", path], false);
+  sf.exec(["org", "open", "--target-org", targetFor(org), "--path", path], false);
 
-export const logout = async (org: Org) => {
+export const setDefaultOrg = async (org: Org) => {
+  await sf.exec(["config", "set", "--global", `target-org=${targetFor(org)}`], configSetResultSchema);
+};
+
+export const setDefaultDevHub = async (org: Org) => {
+  await sf.exec(["config", "set", "--global", `target-dev-hub=${targetFor(org)}`], configSetResultSchema);
+};
+
+export const setAlias = async (org: Org, alias: string) => {
+  await sf.exec(["alias", "set", `${alias}=${org.username}`], aliasMutationResultSchema);
+};
+
+export const unsetAlias = async (alias: string) => {
+  await sf.exec(["alias", "unset", alias], aliasMutationResultSchema);
+};
+
+const deleteScratch = async (org: Org) => {
+  await sf.exec(["org", "delete", "scratch", "--target-org", targetFor(org), "--no-prompt"], false);
+  await settings.clearSettings(org.username);
+};
+
+const logout = async (org: Org) => {
   await sf.exec(["org", "logout", "--target-org", org.username, "--no-prompt"], false);
   await settings.clearSettings(org.username);
-  await projectLinks.clearOrgProjectPrefs(org.username);
+};
+
+/** Scratch → delete on Dev Hub; other orgs → local logout only. */
+export const remove = async (org: Org) => {
+  if (org.kind === "scratch") {
+    await deleteScratch(org);
+    return;
+  }
+  await logout(org);
 };
 
 export const saveSettings = settings.saveSettings;

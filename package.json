@@ -27,21 +27,21 @@
       "name": "orgs-list",
       "title": "Salesforce Orgs",
       "subtitle": "Salesforce Pilot",
-      "description": "List authenticated orgs, open them in the browser, add new logins, and remove orgs.",
+      "description": "List authenticated orgs, open them in the browser, manage defaults/aliases, and remove orgs.",
       "mode": "view"
     },
     {
       "name": "export-settings",
       "title": "Export Settings",
       "subtitle": "Salesforce Pilot",
-      "description": "Export org display prefs, pins, and manual project links to a JSON file in Downloads.",
+      "description": "Export org display prefs and pins to a JSON file in Downloads.",
       "mode": "no-view"
     },
     {
       "name": "import-settings",
       "title": "Import Settings",
       "subtitle": "Salesforce Pilot",
-      "description": "Import org display prefs, pins, and manual project links from a Salesforce Pilot JSON export.",
+      "description": "Import org display prefs and pins from a Salesforce Pilot JSON export.",
       "mode": "view"
     }
   ],

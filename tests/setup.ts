@@ -30,6 +30,7 @@ vi.mock("@raycast/api", () => ({
     Folder: "folder-16",
     Warning: "warning-16",
     Clock: "clock-16",
+    CheckCircle: "check-circle-16",
   },
   Toast: { Style: { Animated: "animated", Failure: "failure", Success: "success" } },
   closeMainWindow: vi.fn(() => Promise.resolve()),

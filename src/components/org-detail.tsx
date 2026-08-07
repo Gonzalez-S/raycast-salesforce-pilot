@@ -7,9 +7,9 @@ import * as projectPresentation from "../project/presentation";
 import type { OrgAttachment } from "../project/schemas";
 import * as projects from "../project/service";
 
-const copyUsername = async (username: string) => {
-  await Clipboard.copy(username);
-  await showToast({ style: Toast.Style.Success, title: "Copied Username" });
+const copyText = async (title: string, content: string) => {
+  await Clipboard.copy(content);
+  await showToast({ style: Toast.Style.Success, title });
 };
 
 const openProject = (attachment: OrgAttachment) =>
@@ -65,9 +65,19 @@ export const OrgDetail = ({ org, attachments }: { org: Org; attachments: OrgAtta
               text={org.username}
               icon={Icon.AtSymbol}
               color={Color.SecondaryText}
-              onAction={() => copyUsername(org.username)}
+              onAction={() => copyText("Copied Username", org.username)}
             />
           </List.Item.Detail.Metadata.TagList>
+          {org.orgId ? (
+            <List.Item.Detail.Metadata.TagList title="Org ID">
+              <List.Item.Detail.Metadata.TagList.Item
+                text={org.orgId}
+                icon={Icon.Hashtag}
+                color={Color.SecondaryText}
+                onAction={() => copyText("Copied Org ID", org.orgId!)}
+              />
+            </List.Item.Detail.Metadata.TagList>
+          ) : null}
           <List.Item.Detail.Metadata.Separator />
           {name ? <List.Item.Detail.Metadata.Label title="Org Name" text={name} icon={Icon.Building} /> : null}
           <List.Item.Detail.Metadata.Label
@@ -75,7 +85,6 @@ export const OrgDetail = ({ org, attachments }: { org: Org; attachments: OrgAtta
             text={org.aliases.length > 0 ? org.aliases.join(", ") : org.alias}
             icon={Icon.Text}
           />
-          {org.orgId ? <List.Item.Detail.Metadata.Label title="Org ID" text={org.orgId} icon={Icon.Hashtag} /> : null}
           <List.Item.Detail.Metadata.Separator />
           <List.Item.Detail.Metadata.Link title="Instance" text={org.instanceUrl} target={org.instanceUrl} />
         </List.Item.Detail.Metadata>

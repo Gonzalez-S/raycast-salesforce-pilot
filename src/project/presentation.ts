@@ -7,12 +7,6 @@ export const kindLabel = (kind: ProjectKind): string => (kind === "workspace" ? 
 export const attachmentIcon = (attachment: OrgAttachment) =>
   attachment.entry.kind === "workspace" ? Icon.Window : Icon.Folder;
 
-export const attachmentSubtitle = (attachment: OrgAttachment): string => {
-  const parts = [attachment.origin === "auto" ? "Auto" : "Manual", kindLabel(attachment.entry.kind)];
-  if (attachment.entry.missing) parts.push("Missing");
-  return parts.join(" · ");
-};
-
 /** List accessory: folder icon alone for one project; icon + count for many. */
 export const attachmentAccessory = (attachments: OrgAttachment[]) => {
   if (attachments.length === 0) return undefined;

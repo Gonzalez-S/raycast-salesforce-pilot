@@ -3,17 +3,13 @@
 ## [Initial Version] - {PR_MERGE_DATE}
 
 - List Salesforce orgs from the SF CLI keystore
-- Open Lightning Home or Setup with auto-login
-- Authenticate new orgs (Production / Sandbox)
-- Local label, color, and group preferences
-- Pins and Recents / group list scopes
-- Scratch org expiration tags
-- Delete orgs from the CLI keystore with confirmation
-- Scan a configurable folder for Salesforce DX projects and editor workspaces (auto-scan when the org list opens)
-- Auto-link local projects to orgs via SF CLI `target-org` (all CLI aliases)
-- Manually attach folders or workspaces per org (editable/removable)
-- Open a linked project in Cursor, VS Code, or another PATH editor
-- Pin orgs to keep them on top of group scopes
-- Clickable project tags in the org detail pane
-- Import / export settings as JSON (org prefs, pins, manual project links)
+- Open common org paths via an Open submenu
+- Authenticate Production / Sandbox orgs; optional default org / Dev Hub at login
+- Set global default org or Dev Hub; manage CLI aliases
+- Local label, color, group, and pins; Recents / group scopes
+- Scratch org expiration tags; delete scratch orgs on the Dev Hub
+- Auto-discover DX projects / workspaces; link via `target-org`; rescan on demand
+- Open linked projects in the configured editor
+- Clickable username / Org ID tags in the detail pane
+- Import / export settings (org prefs and pins)
 - Refresh production and sandbox color palettes

@@ -53,7 +53,7 @@ export const openInEditor = async (projectPath: string) => {
 
 export const openAttachment = async (attachment: OrgAttachment) => {
   if (attachment.entry.missing) {
-    throw new Error("Project path no longer exists. Rescan or remove it.");
+    throw new Error("Project path no longer exists. Rescan projects.");
   }
   await openInEditor(attachment.entry.path);
 };

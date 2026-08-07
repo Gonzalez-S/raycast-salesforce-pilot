@@ -1,6 +1,8 @@
 export const PROJECT_CATALOG_KEY = "salesforce-pilot-project-catalog";
-export const MANUAL_CATALOG_KEY = "salesforce-pilot-manual-catalog";
-export const ORG_PROJECTS_KEY = "salesforce-pilot-org-projects";
+
+/** Legacy keys cleared on load after manual project linking was removed. */
+export const LEGACY_MANUAL_CATALOG_KEY = "salesforce-pilot-manual-catalog";
+export const LEGACY_ORG_PROJECTS_KEY = "salesforce-pilot-org-projects";
 
 export const DX_PROJECT_MANIFESTS = ["sfdx-project.json", "sf-project.json"] as const;
 

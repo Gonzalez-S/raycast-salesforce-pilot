@@ -174,6 +174,21 @@ describe("daysUntil / accessories", () => {
     ]);
   });
 
+  it("shows default org and Dev Hub accessories", () => {
+    const defaults = org({
+      username: "u",
+      alias: "hub",
+      kind: "devhub",
+      isDefaultOrg: true,
+      isDefaultDevHub: true,
+    });
+    expect(accessories(defaults)).toEqual([
+      { icon: "hammer-16", tooltip: "Dev Hub" },
+      { icon: "check-circle-16", tooltip: "Default Org" },
+      { icon: "hammer-16", tooltip: "Default Dev Hub" },
+    ]);
+  });
+
   it("labels kinds", () => {
     expect(kindLabel("devhub")).toBe("Dev Hub");
   });

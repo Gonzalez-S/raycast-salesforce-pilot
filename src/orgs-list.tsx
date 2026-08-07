@@ -79,21 +79,50 @@ export default function OrgsList() {
     [],
   );
 
-  const handleAttachmentsChange = useCallback(async () => {
-    await revalidate();
-  }, [revalidate]);
+  const setDefaultOrg = (org: Org) => () =>
+    utils.withAnimatedToast(
+      "Setting default org…",
+      async () => {
+        await orgs.setDefaultOrg(org);
+        await revalidate();
+      },
+      { successTitle: "Default org set", successMessage: presentation.title(org) },
+    );
+
+  const setDefaultDevHub = (org: Org) => () =>
+    utils.withAnimatedToast(
+      "Setting default Dev Hub…",
+      async () => {
+        await orgs.setDefaultDevHub(org);
+        await revalidate();
+      },
+      { successTitle: "Default Dev Hub set", successMessage: presentation.title(org) },
+    );
+
+  const unsetAlias = (alias: string) =>
+    utils.withAnimatedToast(
+      `Unsetting ${alias}…`,
+      async () => {
+        await orgs.unsetAlias(alias);
+        await revalidate();
+      },
+      { successTitle: "Alias unset", successMessage: alias, failureTitle: "Couldn’t unset alias" },
+    );
 
   const deleteOrg = (org: Org) => async () => {
+    const isScratch = org.kind === "scratch";
     const confirmed = await confirmAlert({
-      title: `Delete ${presentation.title(org)}?`,
-      message: "Removes the org from the SF CLI keystore. You can re-authenticate later.",
+      title: isScratch ? `Delete scratch org ${presentation.title(org)}?` : `Delete ${presentation.title(org)}?`,
+      message: isScratch
+        ? "Deletes the scratch org on the Dev Hub and removes local auth."
+        : "Removes the org from the SF CLI keystore. You can re-authenticate later.",
       icon: Icon.Trash,
       primaryAction: { title: "Delete", style: Alert.ActionStyle.Destructive },
     });
     if (!confirmed) return;
 
     await utils.withAnimatedToast("Deleting…", async () => {
-      await orgs.logout(org);
+      await orgs.remove(org);
       await revalidate();
     });
   };
@@ -142,8 +171,11 @@ export default function OrgsList() {
                   onSaveSettings={saveSettings(org)}
                   onOpen={openOrg(org)}
                   onOpenProject={handleOpenProject}
-                  onAttachmentsChange={handleAttachmentsChange}
                   onRescanProjects={rescanProjects}
+                  onSetDefaultOrg={setDefaultOrg(org)}
+                  onSetDefaultDevHub={setDefaultDevHub(org)}
+                  onUnsetAlias={unsetAlias}
+                  onRefresh={revalidate}
                   onDelete={deleteOrg(org)}
                 />
               ))}

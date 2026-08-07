@@ -21,46 +21,22 @@ const entryMatchesOrg = (entry: CatalogEntry, org: Org): boolean => {
   return targets.some((target) => keys.has(normalizeOrgKey(target)));
 };
 
-export const resolveOrgAttachments = (
-  org: Org,
-  catalog: CatalogEntry[],
-  manualProjectIds: string[],
-): OrgAttachment[] => {
-  const byId = new Map(catalog.map((entry) => [entry.id, entry]));
-  const manualIds = new Set(manualProjectIds);
-  const attachmentMap = new Map<string, OrgAttachment>();
+export const resolveOrgAttachments = (org: Org, catalog: CatalogEntry[]): OrgAttachment[] => {
+  const attachments: OrgAttachment[] = [];
 
   for (const entry of catalog) {
     if (!entryMatchesOrg(entry, org)) continue;
-    attachmentMap.set(entry.id, { entry, origin: "auto" });
+    attachments.push({ entry });
   }
 
-  for (const id of manualIds) {
-    const entry = byId.get(id);
-    if (!entry) continue;
-
-    const existing = attachmentMap.get(id);
-    if (existing) {
-      attachmentMap.set(id, existing);
-      continue;
-    }
-
-    attachmentMap.set(id, { entry, origin: "manual" });
-  }
-
-  return [...attachmentMap.values()].sort((a, b) => a.entry.name.localeCompare(b.entry.name));
+  return attachments.sort((a, b) => a.entry.name.localeCompare(b.entry.name));
 };
 
-export const resolveAttachmentsForOrgs = (
-  orgs: Org[],
-  catalog: CatalogEntry[],
-  orgProjectsMap: Record<string, { manualProjectIds?: string[] }>,
-): Record<string, OrgAttachment[]> => {
+export const resolveAttachmentsForOrgs = (orgs: Org[], catalog: CatalogEntry[]): Record<string, OrgAttachment[]> => {
   const result: Record<string, OrgAttachment[]> = {};
 
   for (const org of orgs) {
-    const prefs = orgProjectsMap[org.username] ?? {};
-    result[org.username] = resolveOrgAttachments(org, catalog, prefs.manualProjectIds ?? []);
+    result[org.username] = resolveOrgAttachments(org, catalog);
   }
 
   return result;
@@ -69,8 +45,7 @@ export const resolveAttachmentsForOrgs = (
 export const countMatchedOrgs = (catalog: CatalogEntry[], orgs: Org[]): number => {
   const usernames = new Set<string>();
   for (const org of orgs) {
-    const attachments = resolveOrgAttachments(org, catalog, []);
-    if (attachments.length > 0) usernames.add(org.username);
+    if (resolveOrgAttachments(org, catalog).length > 0) usernames.add(org.username);
   }
   return usernames.size;
 };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_GROUP, DEFAULT_SANDBOX_COLOR } from "../src/org/constants";
+import { DEFAULT_GROUP, DEFAULT_SANDBOX_COLOR, LOGIN_URLS } from "../src/org/constants";
 import { addOrgFormValuesSchema, orgDisplaySettingsSchema } from "../src/org/schemas";
 
 describe("orgDisplaySettingsSchema", () => {
@@ -36,13 +36,17 @@ describe("addOrgFormValuesSchema", () => {
         label: "",
         color: DEFAULT_SANDBOX_COLOR,
         group: "US",
+        setDefault: true,
       }),
     ).toMatchObject({
       loginHost: "production",
+      instanceUrl: LOGIN_URLS.production,
       alias: "my-org",
       label: undefined,
       color: DEFAULT_SANDBOX_COLOR,
       group: "US",
+      setDefault: true,
+      setDefaultDevHub: false,
     });
   });
 });

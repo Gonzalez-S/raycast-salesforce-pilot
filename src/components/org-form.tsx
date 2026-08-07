@@ -15,6 +15,7 @@ import { ORG_KIND_ICON } from "../org/kind";
 import { title as orgTitle } from "../org/presentation";
 import {
   addOrgFormValuesSchema,
+  aliasFormValuesSchema,
   colorValueSchema,
   loginHostSchema,
   type Org,
@@ -75,6 +76,8 @@ export const AddOrgForm = ({ knownGroups, onDone }: { knownGroups: string[]; onD
     initialValues: {
       loginHost: "sandbox",
       alias: "",
+      setDefault: false,
+      setDefaultDevHub: false,
       label: "",
       color: DEFAULT_SANDBOX_COLOR,
       group: DEFAULT_GROUP,
@@ -91,10 +94,16 @@ export const AddOrgForm = ({ knownGroups, onDone }: { knownGroups: string[]; onD
       await utils.withAnimatedToast(
         "Waiting for Salesforce login…",
         async () => {
-          await orgs.authenticate(parsed.alias, parsed.loginHost, {
-            label: parsed.label,
-            color: parsed.color,
-            group: parsed.group,
+          await orgs.authenticate({
+            alias: parsed.alias,
+            instanceUrl: parsed.instanceUrl,
+            setDefault: parsed.setDefault,
+            setDefaultDevHub: parsed.setDefaultDevHub,
+            displaySettings: {
+              label: parsed.label,
+              color: parsed.color,
+              group: parsed.group,
+            },
           });
           onDone();
           pop();
@@ -138,10 +147,67 @@ export const AddOrgForm = ({ knownGroups, onDone }: { knownGroups: string[]; onD
         <Form.Dropdown.Item value="sandbox" title="Sandbox" icon={ORG_KIND_ICON.sandbox} />
       </Form.Dropdown>
       <Form.TextField title="Alias" placeholder="sandbox-1" {...itemProps.alias} />
+      <Form.Checkbox
+        label="Set as default org"
+        info="Runs future SF CLI commands against this org when no --target-org is passed."
+        {...itemProps.setDefault}
+      />
+      <Form.Checkbox
+        label="Set as default Dev Hub"
+        info="Sets the global target-dev-hub for SF CLI commands."
+        {...itemProps.setDefaultDevHub}
+      />
       <Form.Separator />
       <Form.TextField title="Label" placeholder="Optional display name" {...itemProps.label} />
       <ColorDropdown {...utils.dropdownProps(itemProps.color)} />
       <GroupField groupProps={itemProps.group} knownGroups={knownGroups} />
+    </Form>
+  );
+};
+
+export const SetAliasForm = ({ org, onDone }: { org: Org; onDone: () => void }) => {
+  const { pop } = useNavigation();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { handleSubmit, itemProps } = useForm<z.input<typeof aliasFormValuesSchema>>({
+    initialValues: { alias: "" },
+    validation: {
+      alias: utils.zodField(requiredStringSchema),
+    },
+    onSubmit: async (formValues) => {
+      const parsed = aliasFormValuesSchema.parse(formValues);
+      setIsLoading(true);
+      await utils.withAnimatedToast(
+        "Setting alias…",
+        async () => {
+          await orgs.setAlias(org, parsed.alias);
+          onDone();
+          pop();
+        },
+        {
+          successTitle: "Alias set",
+          successMessage: parsed.alias,
+          failureTitle: "Couldn’t set alias",
+          finally: () => setIsLoading(false),
+        },
+      );
+    },
+  });
+
+  return (
+    <Form
+      isLoading={isLoading}
+      navigationTitle={`Alias · ${orgTitle(org)}`}
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Set Alias" icon={Icon.Text} onSubmit={handleSubmit} />
+        </ActionPanel>
+      }
+    >
+      <Form.Description
+        text={`Points a CLI alias at ${org.username}. Existing aliases: ${org.aliases.join(", ") || "none"}.`}
+      />
+      <Form.TextField title="Alias" placeholder="my-org" {...itemProps.alias} />
     </Form>
   );
 };
