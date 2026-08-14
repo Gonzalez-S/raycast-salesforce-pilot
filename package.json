@@ -50,6 +50,13 @@
       "subtitle": "Salesforce Pilot",
       "description": "Browse Lightning Design System icons by category; copy icon names and markup.",
       "mode": "view"
+    },
+    {
+      "name": "salesforce-colors",
+      "title": "Salesforce Colors",
+      "subtitle": "Salesforce Pilot",
+      "description": "Browse Salesforce Cosmos theme colors (light/dark); copy CSS variables and hex values.",
+      "mode": "view"
     }
   ],
   "preferences": [

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ACTION_GLYPH_SCALE, composeChromeIcon, recolorSvgFill, STANDARD_RADIUS_RATIO } from "../src/icons/preview";
+import { composeChromeIcon, GLYPH_SCALE, recolorSvgFill, scaleSvg, STANDARD_RADIUS_RATIO } from "../src/icons/preview";
 import { parseBackgroundTokens, rgbOrHexToHex } from "../src/slds/icon-colors";
 
 describe("rgbOrHexToHex", () => {
@@ -41,31 +41,26 @@ describe("parseBackgroundTokens", () => {
 describe("composeChromeIcon", () => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="#fff"><path d="M0 0h10v10H0z"/></svg>`;
 
-  it("uses a rounded square for standard/custom chrome", () => {
+  it("uses a rounded square and scaled glyph", () => {
     const composed = composeChromeIcon(svg, { background: "#5867e8", shape: "roundedSquare" });
     const radius = 100 * STANDARD_RADIUS_RATIO;
     expect(composed).toContain(`<rect width="100" height="100" rx="${radius}" ry="${radius}" fill="#5867e8"/>`);
-    expect(composed).toContain('<g fill="#fff">');
-    expect(composed).not.toContain("<circle");
+    expect(composed).toContain(`scale(${GLYPH_SCALE})`);
+    expect(composed).toContain('fill="#fff"');
   });
 
   it("uses a scaled circle for action chrome", () => {
-    const composed = composeChromeIcon(svg, {
-      background: "#1b96ff",
-      shape: "circle",
-      glyphScale: ACTION_GLYPH_SCALE,
-    });
+    const composed = composeChromeIcon(svg, { background: "#1b96ff", shape: "circle" });
     expect(composed).toContain('<circle cx="50" cy="50" r="50" fill="#1b96ff"/>');
-    expect(composed).toContain(`scale(${ACTION_GLYPH_SCALE})`);
-    expect(composed).toContain('<g fill="#fff"');
+    expect(composed).toContain(`scale(${GLYPH_SCALE})`);
   });
 });
 
-describe("recolorSvgFill", () => {
-  it("forces a root group fill for utility glyphs", () => {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" fill="#fff"><path d="M0 0h10v10H0z" fill="#fff"/></svg>`;
-    const recolored = recolorSvgFill(svg, "#54698d");
-    expect(recolored).toContain('<g fill="#54698d">');
-    expect(recolored).not.toContain("#fff");
+describe("recolorSvgFill / scaleSvg", () => {
+  it("scales utility and doctype glyphs", () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="#fff"><path d="M0 0h10v10H0z" fill="#fff"/></svg>`;
+    expect(recolorSvgFill(svg, "#54698d")).toContain(`scale(${GLYPH_SCALE})`);
+    expect(recolorSvgFill(svg, "#54698d")).toContain("#54698d");
+    expect(scaleSvg(svg)).toContain(`scale(${GLYPH_SCALE})`);
   });
 });

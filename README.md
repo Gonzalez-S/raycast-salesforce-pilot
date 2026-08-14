@@ -29,6 +29,14 @@ Raycast extension for opening and managing Salesforce orgs from your SF CLI keys
 - Copy icon API name, `lightning-icon` markup, or CDN SVG/PNG URLs
 - Catalog, icon colors, and previews are cached locally (CDN re-fetch at most weekly)
 
+### Salesforce Colors
+
+- Browse [Salesforce Cosmos](https://www.lightningdesignsystem.com/) (SLDS 2) theme colors
+- Diagonal swatches show **light · dark** pairs from Cosmos `light-dark()` tokens
+- Filter by Semantic / Palettes / Brand & Status scales (and per-family)
+- Copy `var(--slds-g-…)`, hex values, or `light-dark(light, dark)`
+- Theme CSS is cached weekly
+
 ## Preferences
 
 - **Projects Scan Folder** (required) — root to scan for Salesforce DX projects and editor workspaces

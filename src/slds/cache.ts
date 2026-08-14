@@ -42,7 +42,7 @@ export const getOrFetch = async <T>(
 
 export const invalidateSldsCache = () => cache.clear();
 
-const previewKey = (apiName: string) => `icon-preview:${SLDS_VERSION}:${apiName}`;
+const previewKey = (apiName: string) => `icon-preview:${SLDS_VERSION}:gs:${apiName}`;
 
 export const getCachedPreview = (apiName: string) => cache.get(previewKey(apiName));
 

@@ -15,3 +15,4 @@
 - Refresh production and sandbox color palettes
 - Browse Salesforce Lightning icons by category (cached catalog)
 - Weekly SLDS token cache; styled icon previews from brand colors
+- Browse Salesforce Cosmos theme colors with light/dark split swatches

@@ -52,6 +52,7 @@ vi.mock("@raycast/api", () => ({
     CheckCircle: "check-circle-16",
     Image: "image-16",
     ArrowClockwise: "arrow-clockwise-16",
+    Swatch: "swatch-16",
   },
   Toast: { Style: { Animated: "animated", Failure: "failure", Success: "success" } },
   closeMainWindow: vi.fn(() => Promise.resolve()),

@@ -16,13 +16,13 @@ type ChromeShape = "circle" | "roundedSquare";
 /** SLDS `.slds-icon_container` default radius: `.25rem` on a `2rem` icon. */
 export const STANDARD_RADIUS_RATIO = 0.125;
 
-/** SLDS action icons: `padding: .5rem` around a `2rem` glyph → 2/3 scale. */
-export const ACTION_GLYPH_SCALE = 2 / 3;
+/** SLDS action padding `.5rem` on a `2rem` glyph → apply to every preview for consistent sizing. */
+export const GLYPH_SCALE = 2 / 3;
 
-const chromeByCategory: Partial<Record<IconCategory, { shape: ChromeShape; glyphScale: number }>> = {
-  action: { shape: "circle", glyphScale: ACTION_GLYPH_SCALE },
-  standard: { shape: "roundedSquare", glyphScale: 1 },
-  custom: { shape: "roundedSquare", glyphScale: 1 },
+const chromeByCategory: Partial<Record<IconCategory, ChromeShape>> = {
+  action: "circle",
+  standard: "roundedSquare",
+  custom: "roundedSquare",
 };
 
 const parseSvg = (svg: string): SvgParts => {
@@ -54,36 +54,35 @@ const chromeElement = (shape: ChromeShape, width: number, height: number, backgr
   return `<rect width="${width}" height="${height}" rx="${radius}" ry="${radius}" fill="${background}"/>`;
 };
 
-const glyphGroup = (body: string, width: number, height: number, scale: number) => {
-  if (scale === 1) return `<g fill="#fff">${body}</g>`;
+const scaledGroup = (body: string, width: number, height: number, fill?: string) => {
   const cx = width / 2;
   const cy = height / 2;
-  return `<g fill="#fff" transform="translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})">${body}</g>`;
+  const fillAttr = fill ? ` fill="${fill}"` : "";
+  return `<g${fillAttr} transform="translate(${cx} ${cy}) scale(${GLYPH_SCALE}) translate(${-cx} ${-cy})">${body}</g>`;
 };
 
-/** Compose SLDS chrome: brand shape behind a white glyph. */
-export const composeChromeIcon = (
-  svg: string,
-  options: { background: string; shape: ChromeShape; glyphScale?: number },
-): string => {
+/** Compose SLDS chrome: brand shape behind a scaled white glyph. */
+export const composeChromeIcon = (svg: string, options: { background: string; shape: ChromeShape }): string => {
   const { viewBox, width, height, body } = parseSvg(svg);
-  const scale = options.glyphScale ?? 1;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}">${chromeElement(options.shape, width, height, options.background)}${glyphGroup(body, width, height, scale)}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}">${chromeElement(options.shape, width, height, options.background)}${scaledGroup(body, width, height, "#fff")}</svg>`;
 };
 
+/** Recolor + scale a glyph (utility / fallback). */
 export const recolorSvgFill = (svg: string, fill: string): string => {
-  const { viewBox, body } = parseSvg(svg);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}"><g fill="${fill}">${body.replace(/\bfill="(?!none)[^"]*"/gi, `fill="${fill}"`)}</g></svg>`;
+  const { viewBox, width, height, body } = parseSvg(svg);
+  const recolored = body.replace(/\bfill="(?!none)[^"]*"/gi, `fill="${fill}"`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}">${scaledGroup(recolored, width, height, fill)}</svg>`;
+};
+
+/** Scale a multi-color SVG (doctype) without recoloring. */
+export const scaleSvg = (svg: string): string => {
+  const { viewBox, width, height, body } = parseSvg(svg);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}">${scaledGroup(body, width, height)}</svg>`;
 };
 
 export const resolveIconPreview = async (icon: SalesforceIcon, colors: IconColorMap): Promise<string> => {
   const cached = getCachedPreview(icon.apiName);
   if (cached) return cached;
-
-  if (icon.category === "doctype") {
-    setCachedPreview(icon.apiName, icon.svgUrl);
-    return icon.svgUrl;
-  }
 
   const response = await fetch(icon.svgUrl);
   if (!response.ok) {
@@ -91,15 +90,19 @@ export const resolveIconPreview = async (icon: SalesforceIcon, colors: IconColor
   }
 
   const raw = await response.text();
-  const chrome = chromeByCategory[icon.category];
+  const shape = chromeByCategory[icon.category];
   const background = colors[icon.apiName];
 
-  const preview =
-    icon.category === "utility"
-      ? toDataUri(recolorSvgFill(raw, UTILITY_ICON_FILL))
-      : chrome && background
-        ? toDataUri(composeChromeIcon(raw, { background, shape: chrome.shape, glyphScale: chrome.glyphScale }))
-        : toDataUri(recolorSvgFill(raw, "#fff"));
+  let preview: string;
+  if (icon.category === "doctype") {
+    preview = toDataUri(scaleSvg(raw));
+  } else if (icon.category === "utility") {
+    preview = toDataUri(recolorSvgFill(raw, UTILITY_ICON_FILL));
+  } else if (shape && background) {
+    preview = toDataUri(composeChromeIcon(raw, { background, shape }));
+  } else {
+    preview = toDataUri(recolorSvgFill(raw, "#fff"));
+  }
 
   setCachedPreview(icon.apiName, preview);
   return preview;
