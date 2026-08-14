@@ -1,10 +1,29 @@
 import { vi } from "vitest";
 
+const cacheStore = new Map<string, string>();
+
 vi.mock("@raycast/api", () => ({
   LocalStorage: {
     getItem: vi.fn(),
     setItem: vi.fn(),
     removeItem: vi.fn(),
+  },
+  Cache: class {
+    get(key: string) {
+      return cacheStore.get(key);
+    }
+    set(key: string, data: string) {
+      cacheStore.set(key, data);
+    }
+    remove(key: string) {
+      return cacheStore.delete(key);
+    }
+    clear() {
+      cacheStore.clear();
+    }
+    has(key: string) {
+      return cacheStore.has(key);
+    }
   },
   getPreferenceValues: vi.fn(() => ({})),
   openExtensionPreferences: vi.fn(() => Promise.resolve()),
@@ -31,6 +50,8 @@ vi.mock("@raycast/api", () => ({
     Warning: "warning-16",
     Clock: "clock-16",
     CheckCircle: "check-circle-16",
+    Image: "image-16",
+    ArrowClockwise: "arrow-clockwise-16",
   },
   Toast: { Style: { Animated: "animated", Failure: "failure", Success: "success" } },
   closeMainWindow: vi.fn(() => Promise.resolve()),

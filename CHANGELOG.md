@@ -13,3 +13,5 @@
 - Clickable username / Org ID tags in the detail pane
 - Import / export settings (org prefs and pins)
 - Refresh production and sandbox color palettes
+- Browse Salesforce Lightning icons by category (cached catalog)
+- Weekly SLDS token cache; styled icon previews from brand colors

@@ -21,6 +21,14 @@ Raycast extension for opening and managing Salesforce orgs from your SF CLI keys
 - Clickable username / Org ID tags in the detail pane
 - Import / export display prefs and pins
 
+### Salesforce Icons
+
+- Browse [Lightning Design System](https://www.lightningdesignsystem.com/icons/) icons (utility, standard, action, custom, doctype)
+- Filter by category; search by name or `category:name`
+- Styled previews match SLDS (rounded-square / circle chrome + brand colors from design tokens)
+- Copy icon API name, `lightning-icon` markup, or CDN SVG/PNG URLs
+- Catalog, icon colors, and previews are cached locally (CDN re-fetch at most weekly)
+
 ## Preferences
 
 - **Projects Scan Folder** (required) — root to scan for Salesforce DX projects and editor workspaces

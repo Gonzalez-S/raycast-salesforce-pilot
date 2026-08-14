@@ -43,6 +43,13 @@
       "subtitle": "Salesforce Pilot",
       "description": "Import org display prefs and pins from a Salesforce Pilot JSON export.",
       "mode": "view"
+    },
+    {
+      "name": "salesforce-icons",
+      "title": "Salesforce Icons",
+      "subtitle": "Salesforce Pilot",
+      "description": "Browse Lightning Design System icons by category; copy icon names and markup.",
+      "mode": "view"
     }
   ],
   "preferences": [
