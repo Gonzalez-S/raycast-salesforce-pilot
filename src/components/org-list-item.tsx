@@ -3,12 +3,13 @@ import type { ReactNode } from "react";
 
 import * as utils from "../lib/utils";
 import { PINS_SECTION, RECENT_SCOPE } from "../org/constants";
-import { OPEN_PATHS } from "../org/open-paths";
+import { toOpenLinkViews } from "../org/open-paths";
 import * as presentation from "../org/presentation";
-import type { Org, OrgDisplaySettings } from "../org/schemas";
+import type { OpenLinks, Org, OrgDisplaySettings } from "../org/schemas";
 import * as projectPresentation from "../project/presentation";
 import type { OrgAttachment } from "../project/schemas";
-import { OpenInSubmenu } from "./open-in-submenu";
+import { EditOpenLinks } from "./edit-open-links";
+import { OpenInSubmenu, OpenSubmenu } from "./open-in-submenu";
 import { OrgDetail } from "./org-detail";
 import { EditOrgForm, SetAliasForm } from "./org-form";
 
@@ -20,6 +21,7 @@ type OrgListItemProps = {
   addOrgAction: ReactNode;
   onTogglePin: () => void;
   onSaveSettings: (settings: OrgDisplaySettings) => Promise<void>;
+  onSaveOpenLinks: (openLinks: OpenLinks) => Promise<void>;
   onOpen: (path: string) => void;
   onOpenIn: (browser: Application, path: string) => void;
   onOpenProject: (attachment: OrgAttachment) => void;
@@ -39,6 +41,7 @@ export const OrgListItem = ({
   addOrgAction,
   onTogglePin,
   onSaveSettings,
+  onSaveOpenLinks,
   onOpen,
   onOpenIn,
   onOpenProject,
@@ -57,6 +60,7 @@ export const OrgListItem = ({
   const unsettableAliases = org.aliases.filter((alias) => alias !== org.username);
   // Search by display label + CLI aliases only (title already covers label || alias).
   const searchKeywords = [...new Set([org.label, org.alias, ...org.aliases].filter(Boolean))] as string[];
+  const openLinks = toOpenLinkViews(org.openLinks);
 
   return (
     <List.Item
@@ -74,12 +78,13 @@ export const OrgListItem = ({
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            <ActionPanel.Submenu title="Open" icon={Icon.Globe}>
-              {OPEN_PATHS.map((item) => (
-                <Action key={item.path} title={item.name} icon={item.icon} onAction={() => onOpen(item.path)} />
-              ))}
-            </ActionPanel.Submenu>
-            <OpenInSubmenu onOpenIn={onOpenIn} />
+            <OpenSubmenu username={org.username} links={openLinks} onOpen={onOpen} />
+            <OpenInSubmenu username={org.username} links={openLinks} onOpenIn={onOpenIn} />
+            <Action.Push
+              title="Edit Open Links…"
+              icon={Icon.Link}
+              target={<EditOpenLinks org={org} onSave={onSaveOpenLinks} />}
+            />
           </ActionPanel.Section>
           <ActionPanel.Section title="Projects">
             {soleProject ? (

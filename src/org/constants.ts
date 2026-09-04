@@ -11,6 +11,8 @@ export const ORG_SETTINGS_KEY = "salesforce-pilot-org-prefs";
 export const SCOPE_CACHE_KEY = "salesforce-pilot-org-scope";
 /** LocalStorage: browser id → last Open In… timestamp. */
 export const OPEN_IN_RECENTS_KEY = "salesforce-pilot-open-in-recents";
+/** LocalStorage: username → open-link path → last used timestamp. */
+export const OPEN_LINK_RECENTS_KEY = "salesforce-pilot-open-link-recents";
 
 export const SF_MAX_BUFFER = 10 * 1024 * 1024;
 export const EXPIRATION_WARN_DAYS = 7;

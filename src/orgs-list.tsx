@@ -6,13 +6,20 @@ import { AddOrgForm } from "./components/org-form";
 import { OrgListItem } from "./components/org-list-item";
 import * as utils from "./lib/utils";
 import { ALL_SCOPE, RECENT_SCOPE, SCOPE_CACHE_KEY } from "./org/constants";
+import { resolveOpenLinks } from "./org/open-paths";
 import * as presentation from "./org/presentation";
-import type { Org, OrgDisplaySettings } from "./org/schemas";
+import type { Org, OrgDisplaySettings, OpenLinks } from "./org/schemas";
 import * as orgs from "./org/service";
 import type { OrgAttachment } from "./project/schemas";
 import * as projects from "./project/service";
 
 const loadListData = () => projects.loadOrgsListData(orgs.list);
+
+/** Heal stale useCachedPromise payloads that predate openLinks. */
+const withOpenLinks = (org: Org): Org => ({
+  ...org,
+  openLinks: resolveOpenLinks(org.openLinks),
+});
 
 export default function OrgsList() {
   const { data, isLoading, revalidate } = useCachedPromise(loadListData);
@@ -21,7 +28,7 @@ export default function OrgsList() {
 
   // Apply remote orgs only when the shared load finishes (with projects in the same snapshot).
   useEffect(() => {
-    if (data) setOrgList(data.orgs);
+    if (data) setOrgList(data.orgs.map(withOpenLinks));
   }, [data]);
 
   const attachmentsByOrg = data?.attachmentsByOrg ?? {};
@@ -58,6 +65,11 @@ export default function OrgsList() {
   const saveSettings = (org: Org) => async (displaySettings: OrgDisplaySettings) => {
     await orgs.saveSettings(org.username, displaySettings);
     patchOrg(org.username, displaySettings);
+  };
+
+  const saveOpenLinks = (org: Org) => async (openLinks: OpenLinks) => {
+    await orgs.saveOpenLinks(org.username, openLinks);
+    patchOrg(org.username, { openLinks });
   };
 
   const togglePin = (org: Org) => async () => {
@@ -176,6 +188,7 @@ export default function OrgsList() {
                   addOrgAction={addOrgAction}
                   onTogglePin={togglePin(org)}
                   onSaveSettings={saveSettings(org)}
+                  onSaveOpenLinks={saveOpenLinks(org)}
                   onOpen={openOrg(org)}
                   onOpenIn={openOrgInBrowser(org)}
                   onOpenProject={handleOpenProject}

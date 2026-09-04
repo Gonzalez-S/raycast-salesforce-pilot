@@ -21,6 +21,7 @@ import {
   title,
 } from "../src/org/presentation";
 import type { Org } from "../src/org/schemas";
+import { DEFAULT_OPEN_LINKS } from "../src/org/open-paths";
 
 const org = (overrides: Partial<Org> & Pick<Org, "username" | "alias" | "kind">): Org => ({
   instanceUrl: "https://example.my.salesforce.com",
@@ -30,6 +31,7 @@ const org = (overrides: Partial<Org> & Pick<Org, "username" | "alias" | "kind">)
   isDefaultOrg: false,
   isDefaultDevHub: false,
   aliases: [overrides.alias],
+  openLinks: DEFAULT_OPEN_LINKS,
   ...overrides,
 });
 

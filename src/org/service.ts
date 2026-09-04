@@ -11,6 +11,8 @@ import {
 } from "./constants";
 import { classifyKind } from "./kind";
 import { getOpenInRecents, rememberOpenInBrowser, sortBrowsersByRecents } from "./open-in-recents";
+import { rememberOpenLink } from "./open-link-recents";
+import { resolveOpenLinks } from "./open-paths";
 import {
   type Org,
   type OrgDisplaySettings,
@@ -80,6 +82,7 @@ const toOrg = (
     label: stored.label,
     color: parseColorValue(stored.color) ?? defaultColorForKind(kind),
     pinned: stored.pinned === true,
+    openLinks: resolveOpenLinks(stored.openLinks),
   });
 };
 
@@ -147,8 +150,10 @@ export const list = async (): Promise<Org[]> => {
   return [...byUsername.values()];
 };
 
-export const open = (org: Org, path: string) =>
-  sf.exec(["org", "open", "--target-org", targetFor(org), "--path", path], false);
+export const open = async (org: Org, path: string) => {
+  await sf.exec(["org", "open", "--target-org", targetFor(org), "--path", path], false);
+  await rememberOpenLink(org.username, path);
+};
 
 /** Resolve a one-time frontdoor URL for the org path (do not log or display). */
 export const getOpenUrl = async (org: Org, path: string): Promise<string> => {
@@ -169,7 +174,7 @@ export const listBrowsers = async (): Promise<Application[]> => {
 export const openInBrowser = async (org: Org, path: string, browser: Application) => {
   const url = await getOpenUrl(org, path);
   await openTarget(url, browser);
-  await rememberOpenInBrowser(browser);
+  await Promise.all([rememberOpenInBrowser(browser), rememberOpenLink(org.username, path)]);
 };
 
 export const setDefaultOrg = async (org: Org) => {
@@ -208,4 +213,5 @@ export const remove = async (org: Org) => {
 };
 
 export const saveSettings = settings.saveSettings;
+export const saveOpenLinks = settings.saveOpenLinks;
 export const setPinned = settings.setPinned;

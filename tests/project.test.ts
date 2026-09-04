@@ -3,6 +3,7 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_SANDBOX_COLOR } from "../src/org/constants";
+import { DEFAULT_OPEN_LINKS } from "../src/org/open-paths";
 import type { Org } from "../src/org/schemas";
 import { parseWorkspaceFolders, scanProjectsRoot } from "../src/project/scanner";
 import { resolveAttachmentsForOrgs, resolveOrgAttachments } from "../src/project/resolve";
@@ -21,6 +22,7 @@ const sampleOrg = (overrides: Partial<Org> = {}): Org => ({
   group: "Other",
   color: DEFAULT_SANDBOX_COLOR,
   pinned: false,
+  openLinks: DEFAULT_OPEN_LINKS,
   ...overrides,
 });
 

@@ -1,5 +1,6 @@
 import * as z from "zod/mini";
 
+import { normalizeOpenLinks } from "../org/open-paths";
 import * as orgSettings from "../org/settings";
 import { orgSettingsMapSchema, parseColorValue, type OrgSettingsMap } from "../org/schemas";
 
@@ -22,6 +23,12 @@ export const settingsExportSchema = z.object({
 
 export type SettingsExport = z.infer<typeof settingsExportSchema>;
 
+const normalizeStoredOpenLinks = (links: OrgSettingsMap[string]["openLinks"]) => {
+  if (!links) return undefined;
+  const cleaned = normalizeOpenLinks(links);
+  return cleaned.length > 0 ? cleaned : undefined;
+};
+
 const normalizeOrgSettings = (map: OrgSettingsMap): OrgSettingsMap => {
   const normalized: OrgSettingsMap = {};
 
@@ -31,6 +38,7 @@ const normalizeOrgSettings = (map: OrgSettingsMap): OrgSettingsMap => {
       group: settings.group,
       pinned: settings.pinned,
       color: parseColorValue(settings.color),
+      openLinks: normalizeStoredOpenLinks(settings.openLinks),
     };
   }
 

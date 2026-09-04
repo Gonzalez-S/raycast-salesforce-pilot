@@ -1,6 +1,7 @@
 import * as z from "zod/mini";
 
 import { COLORS, DEFAULT_GROUP, LOGIN_URLS, ORG_KINDS, type OrgKind } from "./constants";
+import { OPEN_LINK_ICON_VALUES, normalizeOpenLinks } from "./open-paths";
 
 const colorValues = COLORS.map((c) => c.value) as [
   (typeof COLORS)[number]["value"],
@@ -20,6 +21,30 @@ export type { OrgKind };
 
 /** Non-empty string for form fields; shared by schemas and useForm validators. */
 export const requiredStringSchema = z.string().check(z.minLength(1, { error: "Required" }));
+
+export const openLinkIconSchema = z.enum(OPEN_LINK_ICON_VALUES);
+
+export const openLinkSchema = z.pipe(
+  z.object({
+    name: requiredStringSchema,
+    path: requiredStringSchema,
+    icon: z.optional(z.string()),
+  }),
+  z.transform((values) => {
+    const [normalized] = normalizeOpenLinks([{ name: values.name, path: values.path, icon: values.icon }]);
+    return normalized!;
+  }),
+);
+
+export type OpenLinkValues = z.infer<typeof openLinkSchema>;
+
+/** Ordered Open-menu links; at least one required. */
+export const openLinksSchema = z.pipe(
+  z.array(openLinkSchema).check(z.minLength(1, { error: "Add at least one open link" })),
+  z.transform((links) => normalizeOpenLinks(links)),
+);
+
+export type OpenLinks = z.infer<typeof openLinksSchema>;
 
 const normalizeDisplaySettings = <T extends { label?: string; color: ColorValue; group: string }>(values: T) => ({
   ...values,
@@ -69,12 +94,13 @@ export const aliasFormValuesSchema = z.pipe(
 
 export type AliasFormValues = z.infer<typeof aliasFormValuesSchema>;
 
-/** Partial prefs as stored in LocalStorage. Color is validated when applied to an org. */
+/** Prefs as stored in LocalStorage. */
 export const storedOrgSettingsSchema = z.object({
   label: z.optional(z.string()),
   color: z.optional(z.string()),
   group: z.optional(z.string()),
   pinned: z.optional(z.boolean()),
+  openLinks: z.optional(z.array(openLinkSchema)),
 });
 
 export type StoredOrgSettings = z.infer<typeof storedOrgSettingsSchema>;
@@ -181,6 +207,8 @@ export const orgSchema = z.object({
   label: z.optional(z.string()),
   color: colorValueSchema,
   pinned: z.boolean(),
+  /** Ordered Open / Open in… shortcuts for this org. */
+  openLinks: openLinksSchema,
 });
 
 export type Org = z.infer<typeof orgSchema>;

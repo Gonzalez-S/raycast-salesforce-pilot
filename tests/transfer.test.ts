@@ -15,6 +15,10 @@ describe("parseSettingsExport", () => {
           color: torch,
           group: "US",
           pinned: true,
+          openLinks: [
+            { name: "Home", path: "/lightning/page/home" },
+            { name: "Accounts", path: "/lightning/o/Account/list" },
+          ],
         },
       },
     };
@@ -26,6 +30,10 @@ describe("parseSettingsExport", () => {
       color: torch,
       group: "US",
       pinned: true,
+      openLinks: [
+        { name: "Home", path: "/lightning/page/home", icon: "house-16" },
+        { name: "Accounts", path: "/lightning/o/Account/list", icon: "link-16" },
+      ],
     });
   });
 
