@@ -1,3 +1,5 @@
+import { type Application, getApplications, open as openTarget } from "@raycast/api";
+
 import * as sf from "../cli/sf";
 
 import {
@@ -8,6 +10,7 @@ import {
   type OrgKind,
 } from "./constants";
 import { classifyKind } from "./kind";
+import { getOpenInRecents, rememberOpenInBrowser, sortBrowsersByRecents } from "./open-in-recents";
 import {
   type Org,
   type OrgDisplaySettings,
@@ -18,11 +21,15 @@ import {
   configSetResultSchema,
   orgAuthResultSchema,
   orgListResultSchema,
+  orgOpenUrlResultSchema,
   orgSchema,
   parseColorValue,
   sfAliasListResultSchema,
 } from "./schemas";
 import * as settings from "./settings";
+
+/** Probe URL so `getApplications` returns browsers (and other URL handlers). */
+const BROWSER_PROBE_URL = "https://login.salesforce.com";
 
 const defaultColorForKind = (kind: OrgKind) =>
   kind === "sandbox" || kind === "scratch" ? DEFAULT_SANDBOX_COLOR : DEFAULT_PRODUCTION_COLOR;
@@ -142,6 +149,28 @@ export const list = async (): Promise<Org[]> => {
 
 export const open = (org: Org, path: string) =>
   sf.exec(["org", "open", "--target-org", targetFor(org), "--path", path], false);
+
+/** Resolve a one-time frontdoor URL for the org path (do not log or display). */
+export const getOpenUrl = async (org: Org, path: string): Promise<string> => {
+  const result = await sf.exec(
+    ["org", "open", "--url-only", "--target-org", targetFor(org), "--path", path],
+    orgOpenUrlResultSchema,
+  );
+  return result.url;
+};
+
+/** Installed apps that can open https URLs (usually browsers), recent first. */
+export const listBrowsers = async (): Promise<Application[]> => {
+  const [apps, recents] = await Promise.all([getApplications(BROWSER_PROBE_URL), getOpenInRecents()]);
+  return sortBrowsersByRecents(apps, recents);
+};
+
+/** Open an org path in a specific browser via frontdoor URL. */
+export const openInBrowser = async (org: Org, path: string, browser: Application) => {
+  const url = await getOpenUrl(org, path);
+  await openTarget(url, browser);
+  await rememberOpenInBrowser(browser);
+};
 
 export const setDefaultOrg = async (org: Org) => {
   await sf.exec(["config", "set", "--global", `target-org=${targetFor(org)}`], configSetResultSchema);

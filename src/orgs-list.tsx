@@ -1,4 +1,4 @@
-import { Action, ActionPanel, Alert, confirmAlert, Icon, Keyboard, List } from "@raycast/api";
+import { Action, ActionPanel, Alert, type Application, confirmAlert, Icon, Keyboard, List } from "@raycast/api";
 import { useCachedPromise, useCachedState } from "@raycast/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -71,6 +71,13 @@ export default function OrgsList() {
       failureTitle: "Couldn’t open org",
     });
 
+  const openOrgInBrowser = (org: Org) => (browser: Application, path: string) =>
+    utils.withClosedWindow(
+      `Opened ${presentation.title(org)} in ${browser.name}`,
+      () => orgs.openInBrowser(org, path, browser),
+      { failureTitle: "Couldn’t open org" },
+    );
+
   const handleOpenProject = useCallback(
     (attachment: OrgAttachment) =>
       utils.withClosedWindow(`Opened ${attachment.entry.name}`, () => projects.openAttachment(attachment), {
@@ -138,7 +145,7 @@ export default function OrgsList() {
       isLoading={isLoading || !ready}
       isShowingDetail={ready && orgList.length > 0}
       filtering={{ keepSectionOrder: true }}
-      searchBarPlaceholder="Search orgs by alias, username, or Org ID…"
+      searchBarPlaceholder="Search orgs by label or alias…"
       searchBarAccessory={
         <List.Dropdown tooltip="List scope" value={activeScope} onChange={setScope}>
           <List.Dropdown.Item title="Recents" value={RECENT_SCOPE} icon={Icon.Clock} />
@@ -170,6 +177,7 @@ export default function OrgsList() {
                   onTogglePin={togglePin(org)}
                   onSaveSettings={saveSettings(org)}
                   onOpen={openOrg(org)}
+                  onOpenIn={openOrgInBrowser(org)}
                   onOpenProject={handleOpenProject}
                   onRescanProjects={rescanProjects}
                   onSetDefaultOrg={setDefaultOrg(org)}

@@ -152,6 +152,15 @@ export const sfAliasListResultSchema = z.array(sfAliasRowSchema);
 
 export type SfAliasRow = z.infer<typeof sfAliasRowSchema>;
 
+/** Result of `sf org open --url-only --json` (frontdoor URL — treat as secret). */
+export const orgOpenUrlResultSchema = z.object({
+  url: z.string(),
+  orgId: z.optional(z.string()),
+  username: z.optional(z.string()),
+});
+
+export type OrgOpenUrlResult = z.infer<typeof orgOpenUrlResultSchema>;
+
 export const orgSchema = z.object({
   username: z.string(),
   /** Primary alias from `sf org list` (most recently added for that username). */

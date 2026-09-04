@@ -1,4 +1,4 @@
-import { Action, ActionPanel, Icon, Keyboard, List } from "@raycast/api";
+import { Action, ActionPanel, type Application, Icon, Keyboard, List } from "@raycast/api";
 import type { ReactNode } from "react";
 
 import * as utils from "../lib/utils";
@@ -8,6 +8,7 @@ import * as presentation from "../org/presentation";
 import type { Org, OrgDisplaySettings } from "../org/schemas";
 import * as projectPresentation from "../project/presentation";
 import type { OrgAttachment } from "../project/schemas";
+import { OpenInSubmenu } from "./open-in-submenu";
 import { OrgDetail } from "./org-detail";
 import { EditOrgForm, SetAliasForm } from "./org-form";
 
@@ -20,6 +21,7 @@ type OrgListItemProps = {
   onTogglePin: () => void;
   onSaveSettings: (settings: OrgDisplaySettings) => Promise<void>;
   onOpen: (path: string) => void;
+  onOpenIn: (browser: Application, path: string) => void;
   onOpenProject: (attachment: OrgAttachment) => void;
   onRescanProjects: () => Promise<void>;
   onSetDefaultOrg: () => void;
@@ -38,6 +40,7 @@ export const OrgListItem = ({
   onTogglePin,
   onSaveSettings,
   onOpen,
+  onOpenIn,
   onOpenProject,
   onRescanProjects,
   onSetDefaultOrg,
@@ -52,22 +55,14 @@ export const OrgListItem = ({
   const soleProject = attachments.length === 1 ? attachments[0] : undefined;
   // Every CLI alias except the username itself (username can appear as a pseudo-alias).
   const unsettableAliases = org.aliases.filter((alias) => alias !== org.username);
+  // Search by display label + CLI aliases only (title already covers label || alias).
+  const searchKeywords = [...new Set([org.label, org.alias, ...org.aliases].filter(Boolean))] as string[];
 
   return (
     <List.Item
       title={presentation.title(org)}
       icon={{ source: Icon.CircleFilled, tintColor: org.color }}
-      keywords={[
-        org.alias,
-        ...org.aliases,
-        org.username,
-        org.instanceUrl,
-        org.orgId ?? "",
-        org.group,
-        presentation.kindLabel(org.kind),
-        org.orgName ?? "",
-        ...attachments.map((attachment) => attachment.entry.name),
-      ]}
+      keywords={searchKeywords}
       accessories={[
         ...presentation.accessories(org, {
           showGroup: inPins,
@@ -84,6 +79,7 @@ export const OrgListItem = ({
                 <Action key={item.path} title={item.name} icon={item.icon} onAction={() => onOpen(item.path)} />
               ))}
             </ActionPanel.Submenu>
+            <OpenInSubmenu onOpenIn={onOpenIn} />
           </ActionPanel.Section>
           <ActionPanel.Section title="Projects">
             {soleProject ? (
